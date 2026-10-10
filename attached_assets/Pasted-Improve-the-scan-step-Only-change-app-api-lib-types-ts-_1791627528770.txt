@@ -1,0 +1,58 @@
+Improve the scan step. Only change app/api/, lib/types.ts, lib/config.ts, replit.md and the /test page.
+Show me your plan first.
+
+1. Split into two routes:
+   - app/api/scan: image in, Prescription out (medications, labOrders, identifiers). No problems.
+   - app/api/analyze: confirmed medications + labOrders + ward, age, gender in, problems out,
+     using the PCNE codes in lib/classification.ts. Only suggest a problem with a clear reason;
+     never invent interactions. Never send patientName or fileNumber to this route.
+   Both routes: validated structured JSON, never return a 500, on any error return
+   { source: "failed", error }.
+
+2. lib/config.ts: GEMINI_SCAN_MODEL and GEMINI_ANALYZE_MODEL, so I can test Flash vs Pro.
+   Resize images in the browser to about 2400px on the long side.
+
+3. Types (lib/types.ts):
+   - Prescription: add patientName, fileNumber, identifierConfidence ("high" | "low"), labOrders.
+   - Medication: add genericName, confidence ("high" | "low"), conditions, startDate,
+     orderStatus ("active" | "stopped" | "modified" | "unknown").
+   - LabOrder: { test, date, sourceText }.
+   Unknown values are null, never guessed.
+
+4. Scan prompt must explain:
+   - These are Egyptian hospital treatment sheets. Header has the patient name and file number.
+     Columns: Physician, Other Recommendations, Treatment, Date/frequency.
+   - Medications come from the Treatment column, frequencies from the Date/frequency column.
+   - Lab orders (CBC, chem, CRP, PT, INR, virology, albumin, etc.) come from the
+     Other Recommendations column, with their dates.
+   - Ignore stamps, signatures and handwritten Arabic notes.
+   - Physician-column marks: DS = [ask teammate], Mod = [ask teammate]. Use them for orderStatus.
+   - Abbreviations: amp = ampoule, tab = tablet, eff = effervescent, SC = subcutaneous,
+     IV = intravenous, neb/nebulize = inhalation.
+   - Route from dosage form: tab/eff/syrup = oral, nebulize = inhalation, sc = subcutaneous,
+     amp = injection (IV or IM if written, else "injection" with low confidence).
+   - Frequency: /24h = once daily, /12h = twice daily, /8h = three times daily,
+     /6h = four times daily. Units: gm = g.
+   - Split combined lines into separate medications ("atrovent + Farcolin" = two entries,
+     same sourceText).
+   - Keep conditions as written ("after sensitivity test", "if BP > 90/60").
+   - Keep brand names as written and add genericName. Common brands:
+     Rocephin = ceftriaxone, Tavanic = levofloxacin, Dexa = dexamethasone, ACC = acetylcysteine,
+     Clexane = enoxaparin, Lasix = furosemide, Controloc = pantoprazole, Atrovent = ipratropium,
+     Farcolin = salbutamol, Pulmicort = budesonide, Unasyn = ampicillin/sulbactam.
+   - confidence "low" when the name isn't a known medication, or the dose or unit is unusual for
+     that drug. Never silently correct a name; keep it as written.
+
+5. Privacy:
+   - patientName and fileNumber are stored only in the browser (localStorage), never in server
+     logs or console output.
+   - Show patientName masked by default (first two letters of each word, then ***) with a Show button.
+
+6. /test page: upload, Scan, then the medication list with low-confidence rows marked, the lab
+   orders, the masked identifiers, an Analyze button that calls /api/analyze, and the raw JSON
+   for both steps.
+
+7. replit.md: replace the rule "Never store patient names or IDs" with:
+   "Patient name and file number are stored locally only, masked on screen by default, and never
+   sent to the analyze step. The demo uses fictional patients only."
+   Then update replit.md with the two-route design. Change nothing else in it.

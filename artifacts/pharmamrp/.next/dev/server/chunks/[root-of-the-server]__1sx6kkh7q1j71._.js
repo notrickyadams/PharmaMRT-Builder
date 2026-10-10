@@ -6,8 +6,6 @@ module.exports = [
 __turbopack_context__.s([
     "POST",
     ()=>POST,
-    "maxDuration",
-    ()=>maxDuration,
     "runtime",
     ()=>runtime
 ]);
@@ -24,8 +22,6 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$artifacts$2f$pharmamrp$2f$li
 ;
 ;
 const runtime = "nodejs";
-const maxDuration = 20;
-const REQUEST_TIMEOUT_MS = 15_000;
 const MAX_BASE64_LENGTH = 18_000_000;
 const supportedMimeTypes = [
     "image/jpeg",
@@ -215,84 +211,61 @@ function toPrescription(result) {
     };
 }
 async function POST(request) {
-    let timeoutId;
-    const controller = new AbortController();
     try {
-        const timeout = new Promise((_, reject)=>{
-            timeoutId = setTimeout(()=>{
-                controller.abort();
-                reject(new Error("timeout"));
-            }, REQUEST_TIMEOUT_MS);
-        });
-        const work = (async ()=>{
-            if (!process.env.GEMINI_API_KEY) {
-                throw new Error("Gemini is not configured.");
-            }
-            const body = ScanRequestSchema.parse(await request.json());
-            const imageBytes = Buffer.from(body.imageBase64, "base64");
-            if (imageBytes.length === 0 || imageBytes.length > 13_500_000) {
-                throw new Error("Invalid image size.");
-            }
-            const ai = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GoogleGenAI"]({
-                apiKey: process.env.GEMINI_API_KEY,
-                httpOptions: {
-                    timeout: REQUEST_TIMEOUT_MS
-                }
-            });
-            const response = await ai.models.generateContent({
-                model: __TURBOPACK__imported__module__$5b$project$5d2f$artifacts$2f$pharmamrp$2f$lib$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GEMINI_MODEL"],
-                contents: [
-                    {
-                        role: "user",
-                        parts: [
-                            {
-                                text: [
-                                    "Read this prescription image and return only the requested structured fields.",
-                                    "Copy medication names, doses, units, frequencies, routes, durations, and sourceText only when legible. Use null for absent or uncertain values; never guess or normalize uncertain text.",
-                                    "Extract ward, patient age, and gender only if explicitly visible. Never return patient names or ID numbers in any field.",
-                                    "Each medication sourceText must be an exact contiguous transcription of only that medication's prescription text.",
-                                    "Suggest a medication-related problem only when the prescription itself gives a clear reason. Do not invent drug interactions, infer facts not visible in the image, or use unsupported external clinical assumptions. Return an empty problems array if there is no clear issue.",
-                                    "Use only the supplied broad PCNE codes: P1 treatment effectiveness, P2 treatment safety, P3 other; C1 drug selection, C2 drug form, C3 dose selection, C4 treatment duration, C5 drug use process, C6 logistics, C7 patient, C8 patient transfer related, C9 other; I0 no intervention, I1 prescriber, I2 patient, I3 drug, I4 other.",
-                                    "For medicationIndexes use zero-based indexes into the medications array. Every highlight must be an exact quote from the sourceText of one of the referenced medications. Do not place names or ID numbers in explanations or highlights.",
-                                    "If a code, severity, or explanation is not clear, return null for that value."
-                                ].join(" ")
-                            },
-                            {
-                                inlineData: {
-                                    mimeType: body.mimeType,
-                                    data: body.imageBase64
-                                }
-                            }
-                        ]
-                    }
-                ],
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: modelResponseSchema,
-                    abortSignal: controller.signal
-                }
-            });
-            if (!response.text) {
-                throw new Error("Gemini returned no structured result.");
-            }
-            const parsed = modelResultSchema.parse(JSON.parse(response.text));
-            const prescription = toPrescription(parsed);
-            return Response.json({
-                prescription,
-                source: "ai"
-            });
-        })();
-        return await Promise.race([
-            work,
-            timeout
-        ]);
-    } catch (error) {
-        if (error instanceof Error && error.message === "timeout") {
-            return failure("Scan timed out after 15 seconds. Please use manual entry.");
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("Gemini is not configured.");
         }
+        const body = ScanRequestSchema.parse(await request.json());
+        const imageBytes = Buffer.from(body.imageBase64, "base64");
+        if (imageBytes.length === 0 || imageBytes.length > 13_500_000) {
+            throw new Error("Invalid image size.");
+        }
+        const ai = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GoogleGenAI"]({
+            apiKey: process.env.GEMINI_API_KEY
+        });
+        const response = await ai.models.generateContent({
+            model: __TURBOPACK__imported__module__$5b$project$5d2f$artifacts$2f$pharmamrp$2f$lib$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GEMINI_MODEL"],
+            contents: [
+                {
+                    role: "user",
+                    parts: [
+                        {
+                            text: [
+                                "Read this prescription image and return only the requested structured fields.",
+                                "Copy medication names, doses, units, frequencies, routes, durations, and sourceText only when legible. Use null for absent or uncertain values; never guess or normalize uncertain text.",
+                                "Extract ward, patient age, and gender only if explicitly visible. Never return patient names or ID numbers in any field.",
+                                "Each medication sourceText must be an exact contiguous transcription of only that medication's prescription text.",
+                                "Suggest a medication-related problem only when the prescription itself gives a clear reason. Do not invent drug interactions, infer facts not visible in the image, or use unsupported external clinical assumptions. Return an empty problems array if there is no clear issue.",
+                                "Use only the supplied broad PCNE codes: P1 treatment effectiveness, P2 treatment safety, P3 other; C1 drug selection, C2 drug form, C3 dose selection, C4 treatment duration, C5 drug use process, C6 logistics, C7 patient, C8 patient transfer related, C9 other; I0 no intervention, I1 prescriber, I2 patient, I3 drug, I4 other.",
+                                "For medicationIndexes use zero-based indexes into the medications array. Every highlight must be an exact quote from the sourceText of one of the referenced medications. Do not place names or ID numbers in explanations or highlights.",
+                                "If a code, severity, or explanation is not clear, return null for that value."
+                            ].join(" ")
+                        },
+                        {
+                            inlineData: {
+                                mimeType: body.mimeType,
+                                data: body.imageBase64
+                            }
+                        }
+                    ]
+                }
+            ],
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: modelResponseSchema
+            }
+        });
+        if (!response.text) {
+            throw new Error("Gemini returned no structured result.");
+        }
+        const parsed = modelResultSchema.parse(JSON.parse(response.text));
+        const prescription = toPrescription(parsed);
+        return Response.json({
+            prescription,
+            source: "ai"
+        });
+    } catch  {
         return failure();
-    } finally{
-        if (timeoutId) clearTimeout(timeoutId);
     }
 }
 }),

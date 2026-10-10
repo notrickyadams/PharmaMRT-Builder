@@ -1,0 +1,42 @@
+{
+  "source": "demo",
+  "exampleId": "demo-1",
+  "demoNotice": "Fictional example only. Not extracted from your image and not for clinical use.",
+  "prescription": {
+    "id": "demo-prescription-1",
+    "scannedAt": "2026-01-01T12:00:00.000Z",
+    "patientName": "Fictional Patient Alpha",
+    "fileNumber": "DEMO-FILE-001",
+    "ward": "Demo General Medicine",
+    "patientAge": 45,
+    "patientGender": "Female",
+    "labs": [
+      { "name": "Creatinine", "value": 1.0, "unit": "mg/dL", "sourceText": "Creatinine: 1.0 mg/dL" },
+      { "name": "Potassium", "value": 4.1, "unit": "mmol/L", "sourceText": "Potassium: 4.1 mmol/L" }
+    ],
+    "medications": [
+      {
+        "id": "demo-1-med-1",
+        "name": "Amoxicillin",
+        "dose": "500",
+        "unit": "mg",
+        "frequency": "three times daily",
+        "route": "oral",
+        "duration": null,
+        "sourceText": "Amoxicillin 500 mg oral three times daily; duration not specified."
+      },
+      {
+        "id": "demo-1-med-2",
+        "name": "Paracetamol",
+        "dose": null,
+        "unit": null,
+        "frequency": "as needed",
+        "route": "oral",
+        "duration": "3 days",
+        "sourceText": "Paracetamol oral as needed for 3 days; dose not specified."
+      }
+    ],
+    "problems": [],
+    "status": "pending"
+  }
+}

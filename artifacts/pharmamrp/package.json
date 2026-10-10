@@ -7,7 +7,8 @@
     "dev": "next dev --hostname 0.0.0.0 --port $PORT",
     "build": "next build",
     "start": "next start --hostname 0.0.0.0 --port $PORT",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.10.0",

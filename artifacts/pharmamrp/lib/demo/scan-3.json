@@ -1,0 +1,42 @@
+{
+  "source": "demo",
+  "exampleId": "demo-3",
+  "demoNotice": "Fictional example only. Not extracted from your image and not for clinical use.",
+  "prescription": {
+    "id": "demo-prescription-3",
+    "scannedAt": "2026-01-01T12:00:00.000Z",
+    "patientName": "Fictional Patient Gamma",
+    "fileNumber": "DEMO-FILE-003",
+    "ward": "Demo Outpatient",
+    "patientAge": 52,
+    "patientGender": "Female",
+    "labs": [
+      { "name": "Glucose", "value": 130, "unit": "mg/dL", "sourceText": "Glucose: 130 mg/dL" },
+      { "name": "Creatinine", "value": 0.8, "unit": "mg/dL", "sourceText": "Creatinine: 0.8 mg/dL" }
+    ],
+    "medications": [
+      {
+        "id": "demo-3-med-1",
+        "name": "Metformin",
+        "dose": "500",
+        "unit": "mg",
+        "frequency": null,
+        "route": "oral",
+        "duration": "30 days",
+        "sourceText": "Metformin 500 mg oral for 30 days; frequency not specified."
+      },
+      {
+        "id": "demo-3-med-2",
+        "name": "Paracetamol",
+        "dose": "1000",
+        "unit": "mg",
+        "frequency": "twice daily",
+        "route": "oral",
+        "duration": null,
+        "sourceText": "Paracetamol 1000 mg oral twice daily; duration: 3 days / 7 days."
+      }
+    ],
+    "problems": [],
+    "status": "pending"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "source": "demo",
+  "exampleId": "demo-1",
+  "demoNotice": "Fictional suggestions only. Pharmacist review is required; not for clinical use.",
+  "prescriptionId": "demo-prescription-1",
+  "problems": [
+    {
+      "id": "demo-1-problem-1",
+      "medicationIds": ["demo-1-med-1"],
+      "problemCode": "P3",
+      "causeCode": "C4",
+      "explanation": "The fictional order explicitly omits the antibiotic duration. Clarify it with the prescriber.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["duration not specified"],
+      "notes": null
+    },
+    {
+      "id": "demo-1-problem-2",
+      "medicationIds": ["demo-1-med-2"],
+      "problemCode": "P3",
+      "causeCode": "C3",
+      "explanation": "The fictional order explicitly omits the paracetamol dose. Clarify it rather than guessing.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["dose not specified"],
+      "notes": null
+    }
+  ]
+}

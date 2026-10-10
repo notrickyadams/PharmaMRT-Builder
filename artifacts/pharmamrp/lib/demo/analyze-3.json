@@ -1,0 +1,36 @@
+{
+  "source": "demo",
+  "exampleId": "demo-3",
+  "demoNotice": "Fictional suggestions only. Pharmacist review is required; not for clinical use.",
+  "prescriptionId": "demo-prescription-3",
+  "problems": [
+    {
+      "id": "demo-3-problem-1",
+      "medicationIds": ["demo-3-med-1"],
+      "problemCode": "P3",
+      "causeCode": "C3",
+      "explanation": "The fictional metformin order explicitly omits the frequency. Ask the prescriber to clarify.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["frequency not specified"],
+      "notes": null
+    },
+    {
+      "id": "demo-3-problem-2",
+      "medicationIds": ["demo-3-med-2"],
+      "problemCode": "P3",
+      "causeCode": "C4",
+      "explanation": "The fictional paracetamol order lists two conflicting durations. Clarify the intended duration.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["duration: 3 days / 7 days"],
+      "notes": null
+    }
+  ]
+}

@@ -1,1 +1,2 @@
 - [Next.js preview reliability](next-preview-reliability.md) — workspace restores can corrupt persisted Turbopack metadata; keep generated output out of version tracking.
+- [Gemini scan availability](gemini-scan-availability.md) — model listing is not proof of generation access; SDK retries can hide overload rejections behind deadline failures.

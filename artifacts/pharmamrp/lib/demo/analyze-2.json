@@ -1,0 +1,36 @@
+{
+  "source": "demo",
+  "exampleId": "demo-2",
+  "demoNotice": "Fictional suggestions only. Pharmacist review is required; not for clinical use.",
+  "prescriptionId": "demo-prescription-2",
+  "problems": [
+    {
+      "id": "demo-2-problem-1",
+      "medicationIds": ["demo-2-med-1", "demo-2-med-2"],
+      "problemCode": "P2",
+      "causeCode": "C1",
+      "explanation": "Two concurrent fictional ibuprofen orders have the same route, frequency and duration. Ask whether both are intended.",
+      "severity": "moderate",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["Ibuprofen 400 mg oral twice daily", "Ibuprofen 200 mg oral twice daily"],
+      "notes": null
+    },
+    {
+      "id": "demo-2-problem-2",
+      "medicationIds": ["demo-2-med-3"],
+      "problemCode": "P3",
+      "causeCode": "C4",
+      "explanation": "The fictional omeprazole order explicitly omits the duration. Request clarification.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["duration not specified"],
+      "notes": null
+    }
+  ]
+}

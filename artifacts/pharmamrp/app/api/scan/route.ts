@@ -1,7 +1,8 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
-import { ACCEPTANCE_CODES, CAUSE_CODES, INTERVENTION_CODES, PROBLEM_CODES } from "@/lib/classification";
-import { GEMINI_MODEL } from "@/lib/config";
+import { CAUSE_CODES, INTERVENTION_CODES, PROBLEM_CODES } from "@/lib/classification";
+import { DEMO_MODE, GEMINI_MODEL } from "@/lib/config";
+import { demoResponse } from "@/lib/demo/index";
 import type { Medication, Prescription, Problem } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -129,6 +130,54 @@ function failure(error = "Scan could not be completed. Please use manual entry."
   );
 }
 
+type ScanStage = "input" | "configuration" | "generation" | "json" | "schema" | "conversion";
+
+class ScanError extends Error {
+  constructor(readonly reason: "timeout" | "empty_output" | "invalid_reference" | "invalid_highlight") {
+    super(reason);
+  }
+}
+
+function describeFailure(error: unknown, stage: ScanStage, timedOut: boolean) {
+  // Never log exception messages, stacks, Zod issues, or provider bodies: they can
+  // contain the upload, extracted patient data, or credentials.
+  const candidateStatus =
+    typeof error === "object" && error !== null && "status" in error ? error.status : undefined;
+  const status = typeof candidateStatus === "number" && Number.isInteger(candidateStatus) &&
+    candidateStatus >= 400 && candidateStatus <= 599 ? candidateStatus : undefined;
+  let reason: string = "unexpected";
+  let message = "Scan could not be completed. Please use manual entry.";
+  if (timedOut || (error instanceof ScanError && error.reason === "timeout") ||
+    (stage === "generation" && error instanceof Error &&
+      ["AbortError", "TimeoutError"].includes(error.name))) {
+    reason = "timeout";
+    message = "Scan timed out after 15 seconds. Please retry or use manual entry.";
+  } else if (stage === "input") {
+    reason = "invalid_input";
+    message = "The image request is invalid. Please upload a JPEG, PNG, or WebP image and retry.";
+  } else if (stage === "configuration") {
+    reason = "configuration";
+    message = "Scanning is not configured. Ask the app administrator to check the Gemini API key.";
+  } else if (stage === "generation" && status) {
+    reason = status === 429 ? "provider_quota" :
+      [401, 403].includes(status) ? "provider_access" :
+      status >= 500 ? "provider_unavailable" : "provider_request";
+    message = status === 429
+      ? "Gemini rejected the scan because of a rate or quota limit. Ask the administrator to check generation quota, or retry later."
+      : [401, 403].includes(status)
+        ? "Gemini denied access. Ask the administrator to check the API key and model permissions."
+        : status >= 500
+          ? "Gemini is temporarily unavailable. Please retry later or use manual entry."
+          : "Gemini rejected the scan request. Ask the administrator to check the scan configuration.";
+  } else if (["json", "schema", "conversion"].includes(stage) ||
+    (error instanceof ScanError && error.reason === "empty_output")) {
+    reason = error instanceof ScanError ? error.reason : stage === "json" ? "invalid_json" : "invalid_schema";
+    message = "Gemini returned an unusable scan result. Please retry with a clearer image or use manual entry.";
+  }
+  console.warn("[prescription-scan]", { stage, reason, ...(status ? { providerStatus: status } : {}) });
+  return message;
+}
+
 function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription {
   const medicationIds = result.medications.map(() => crypto.randomUUID());
   const medications: Medication[] = result.medications.map((medication, index) => ({
@@ -140,7 +189,7 @@ function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription
     if (
       problem.medicationIndexes.some((index) => index < 0 || index >= medications.length)
     ) {
-      throw new Error("Invalid medication reference.");
+      throw new ScanError("invalid_reference");
     }
 
     const medicationIdsForProblem = problem.medicationIndexes.map((index) => medicationIds[index]!);
@@ -149,7 +198,7 @@ function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription
       .filter((text): text is string => Boolean(text));
 
     if (problem.highlights.some((highlight) => !citedSourceText.some((text) => text.includes(highlight)))) {
-      throw new Error("A source highlight did not match the prescription text.");
+      throw new ScanError("invalid_highlight");
     }
 
     return {
@@ -181,32 +230,39 @@ function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription
 }
 
 export async function POST(request: Request) {
+  if (DEMO_MODE) return demoResponse(request, "scan");
+
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
   const controller = new AbortController();
+  let stage: ScanStage = "input";
 
   try {
     const timeout = new Promise<never>((_, reject) => {
       timeoutId = setTimeout(() => {
         controller.abort();
-        reject(new Error("timeout"));
+        reject(new ScanError("timeout"));
       }, REQUEST_TIMEOUT_MS);
     });
 
     const work = (async () => {
-      if (!process.env.GEMINI_API_KEY) {
-        throw new Error("Gemini is not configured.");
-      }
-
       const body = ScanRequestSchema.parse(await request.json());
       const imageBytes = Buffer.from(body.imageBase64, "base64");
-      if (imageBytes.length === 0 || imageBytes.length > 13_500_000) {
+      if (imageBytes.length === 0 || imageBytes.length > 13_500_000 ||
+        imageBytes.toString("base64") !== body.imageBase64) {
         throw new Error("Invalid image size.");
       }
 
+      stage = "configuration";
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("Gemini is not configured.");
+      }
       const ai = new GoogleGenAI({
         apiKey: process.env.GEMINI_API_KEY,
-        httpOptions: { timeout: REQUEST_TIMEOUT_MS },
+        // SDK retries turn a fast overload rejection into a deadline failure.
+        // Keep one generation attempt inside the scan's bounded timeout.
+        httpOptions: { timeout: REQUEST_TIMEOUT_MS, retryOptions: { attempts: 1 } },
       });
+      stage = "generation";
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [
@@ -237,21 +293,28 @@ export async function POST(request: Request) {
       });
 
       if (!response.text) {
-        throw new Error("Gemini returned no structured result.");
+        throw new ScanError("empty_output");
       }
 
-      const parsed = modelResultSchema.parse(JSON.parse(response.text));
+      stage = "json";
+      const json: unknown = JSON.parse(response.text);
+      stage = "schema";
+      const parsed = modelResultSchema.parse(json);
+      stage = "conversion";
       const prescription = toPrescription(parsed);
       return Response.json({ prescription, source: "ai" });
     })();
 
     return await Promise.race([work, timeout]);
   } catch (error) {
-    if (error instanceof Error && error.message === "timeout") {
-      return failure("Scan timed out after 15 seconds. Please use manual entry.");
-    }
-    return failure();
+    return failure(describeFailure(error, stage, controller.signal.aborted));
   } finally {
     if (timeoutId) clearTimeout(timeoutId);
   }
+}
+
+export function GET() {
+  return Response.json({ demoMode: DEMO_MODE }, {
+    headers: { "Cache-Control": "no-store" },
+  });
 }

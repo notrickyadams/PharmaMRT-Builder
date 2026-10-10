@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type ScanResult = {
   prescription: unknown | null;
-  source: "ai" | "failed";
+  source: "ai" | "demo" | "failed";
   error?: string;
 };
 
@@ -54,10 +54,27 @@ async function resizeImage(file: File): Promise<{
 }
 
 export default function TestPage() {
+  const [demoMode, setDemoMode] = useState(false);
+  const [modeError, setModeError] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/scan", { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Mode status unavailable.");
+        const status = await response.json();
+        if (typeof status.demoMode !== "boolean") throw new Error("Invalid mode status.");
+        if (!controller.signal.aborted) setDemoMode(status.demoMode);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setModeError("Demo mode status could not be checked.");
+      });
+    return () => controller.abort();
+  }, []);
 
   async function scan() {
     if (!file || loading) return;
@@ -88,6 +105,10 @@ export default function TestPage() {
   return (
     <main>
       <h1>Prescription scan test</h1>
+      {(demoMode || result?.source === "demo") && (
+        <p style={{ fontSize: "0.75rem", margin: "0.25rem 0" }}>Demo mode</p>
+      )}
+      {modeError && <p role="alert">{modeError}</p>}
       <label htmlFor="prescription-image">Prescription image</label>{" "}
       <input
         id="prescription-image"

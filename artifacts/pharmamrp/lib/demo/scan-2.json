@@ -1,0 +1,52 @@
+{
+  "source": "demo",
+  "exampleId": "demo-2",
+  "demoNotice": "Fictional example only. Not extracted from your image and not for clinical use.",
+  "prescription": {
+    "id": "demo-prescription-2",
+    "scannedAt": "2026-01-01T12:00:00.000Z",
+    "patientName": "Fictional Patient Beta",
+    "fileNumber": "DEMO-FILE-002",
+    "ward": "Demo Surgery",
+    "patientAge": 38,
+    "patientGender": "Male",
+    "labs": [
+      { "name": "Creatinine", "value": 0.9, "unit": "mg/dL", "sourceText": "Creatinine: 0.9 mg/dL" },
+      { "name": "Hemoglobin", "value": 13.5, "unit": "g/dL", "sourceText": "Hemoglobin: 13.5 g/dL" }
+    ],
+    "medications": [
+      {
+        "id": "demo-2-med-1",
+        "name": "Ibuprofen",
+        "dose": "400",
+        "unit": "mg",
+        "frequency": "twice daily",
+        "route": "oral",
+        "duration": "3 days",
+        "sourceText": "Ibuprofen 400 mg oral twice daily for 3 days."
+      },
+      {
+        "id": "demo-2-med-2",
+        "name": "Ibuprofen",
+        "dose": "200",
+        "unit": "mg",
+        "frequency": "twice daily",
+        "route": "oral",
+        "duration": "3 days",
+        "sourceText": "Ibuprofen 200 mg oral twice daily for 3 days."
+      },
+      {
+        "id": "demo-2-med-3",
+        "name": "Omeprazole",
+        "dose": "20",
+        "unit": "mg",
+        "frequency": "once daily",
+        "route": "oral",
+        "duration": null,
+        "sourceText": "Omeprazole 20 mg oral once daily; duration not specified."
+      }
+    ],
+    "problems": [],
+    "status": "pending"
+  }
+}

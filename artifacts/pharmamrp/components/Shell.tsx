@@ -21,6 +21,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <Link href="/scan" aria-current={active("/scan") ? "page" : undefined}>Scan</Link>
           <Link href="/records" aria-current={active("/records") ? "page" : undefined}>Records</Link>
           <Link href="/administration" aria-current={active("/administration") ? "page" : undefined}>Administration</Link>
+          <Link href="/report" aria-current={active("/report") ? "page" : undefined}>Report</Link>
         </nav>
       </header>
       {DEMO_MODE && <div className={styles.demoNotice} role="status">Demo mode · fictional training examples</div>}

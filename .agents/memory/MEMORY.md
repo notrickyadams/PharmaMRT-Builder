@@ -1,3 +1,3 @@
 - [Next.js preview reliability](next-preview-reliability.md) — workspace restores can corrupt persisted Turbopack metadata; keep generated output out of version tracking.
 - [Gemini scan availability](gemini-scan-availability.md) — model listing is not proof of generation access; SDK retries can hide overload rejections behind deadline failures.
-- [Administration scope](administration-scope.md) — “administration” means medication doses, timing, and missed doses, not hospital staff management.
+- [Administration scope](administration-scope.md) — administration instructions: IV bolus/infusion, diluent type/volume and duration, oral meal timing; not a given/missed-dose log.

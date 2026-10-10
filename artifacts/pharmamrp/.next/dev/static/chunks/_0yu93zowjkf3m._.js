@@ -36,7 +36,21 @@ async function readApiResponse(response, action) {
     try {
         payload = JSON.parse(text);
     } catch  {
-        throw new Error(`${action} service returned incomplete or invalid JSON. No result was accepted.`);
+        const reference = response.headers.get("x-scan-request-id");
+        const safeReference = reference && /^[a-f0-9-]{36}$/i.test(reference) ? reference : null;
+        const bytes = new TextEncoder().encode(text).byteLength;
+        const details = `HTTP ${response.status}; ${bytes} bytes${safeReference ? `; reference ${safeReference}` : ""}`;
+        const trimmed = text.trim();
+        if (!trimmed) {
+            throw new Error(`${action} connection closed before the final JSON result arrived (${details}). No result was accepted.`);
+        }
+        if (trimmed.startsWith("<") || /<!doctype|<html/i.test(trimmed)) {
+            throw new Error(`${action} gateway returned HTML instead of the final JSON result (${details}). No result was accepted.`);
+        }
+        if (!trimmed.endsWith("}") && !trimmed.endsWith("]")) {
+            throw new Error(`${action} JSON response was truncated (${details}). No result was accepted.`);
+        }
+        throw new Error(`${action} service returned invalid JSON (${details}). No result was accepted.`);
     }
     if (!payload || typeof payload !== "object") {
         throw new Error(`${action} service returned an invalid result.`);
@@ -252,7 +266,7 @@ function TestPage() {
                 children: "Prescription scan test"
             }, void 0, false, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 314,
+                lineNumber: 328,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -260,7 +274,7 @@ function TestPage() {
                 children: "Prescription image"
             }, void 0, false, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 315,
+                lineNumber: 329,
                 columnNumber: 7
             }, this),
             " ",
@@ -282,7 +296,7 @@ function TestPage() {
                 }
             }, void 0, false, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 316,
+                lineNumber: 330,
                 columnNumber: 7
             }, this),
             " ",
@@ -293,7 +307,7 @@ function TestPage() {
                 children: scanLoading ? "Scanning…" : "Scan"
             }, void 0, false, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 333,
+                lineNumber: 347,
                 columnNumber: 7
             }, this),
             scanLoading && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -301,7 +315,7 @@ function TestPage() {
                 children: "Scanning prescription…"
             }, void 0, false, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 336,
+                lineNumber: 350,
                 columnNumber: 23
             }, this),
             scanError && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -309,7 +323,7 @@ function TestPage() {
                 children: scanError
             }, void 0, false, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 337,
+                lineNumber: 351,
                 columnNumber: 21
             }, this),
             prescription && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -322,7 +336,7 @@ function TestPage() {
                                 children: "Patient identifiers"
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 342,
+                                lineNumber: 356,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -331,7 +345,7 @@ function TestPage() {
                                         children: "Patient name:"
                                     }, void 0, false, {
                                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                        lineNumber: 344,
+                                        lineNumber: 358,
                                         columnNumber: 15
                                     }, this),
                                     " ",
@@ -339,7 +353,7 @@ function TestPage() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 343,
+                                lineNumber: 357,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -348,7 +362,7 @@ function TestPage() {
                                         children: "File number:"
                                     }, void 0, false, {
                                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                        lineNumber: 350,
+                                        lineNumber: 364,
                                         columnNumber: 15
                                     }, this),
                                     " ",
@@ -356,7 +370,7 @@ function TestPage() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 349,
+                                lineNumber: 363,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -366,7 +380,7 @@ function TestPage() {
                                 ]
                             }, void 0, true, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 355,
+                                lineNumber: 369,
                                 columnNumber: 13
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -375,7 +389,7 @@ function TestPage() {
                                 children: identifiersVisible ? "Hide identifiers" : "Show identifiers"
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 356,
+                                lineNumber: 370,
                                 columnNumber: 13
                             }, this),
                             storageNotice && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -383,13 +397,13 @@ function TestPage() {
                                 children: storageNotice
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 362,
+                                lineNumber: 376,
                                 columnNumber: 31
                             }, this)
                         ]
                     }, void 0, true, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 341,
+                        lineNumber: 355,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -400,14 +414,14 @@ function TestPage() {
                                 children: "Medications"
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 366,
+                                lineNumber: 380,
                                 columnNumber: 13
                             }, this),
                             prescription.medications.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 children: "No medications were extracted."
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 368,
+                                lineNumber: 382,
                                 columnNumber: 15
                             }, this) : prescription.medications.map((medication, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("fieldset", {
                                     children: [
@@ -420,20 +434,20 @@ function TestPage() {
                                                     children: "Low confidence — verify this row"
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 375,
+                                                    lineNumber: 389,
                                                     columnNumber: 23
                                                 }, this),
                                                 medication.confidence === null && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("strong", {
                                                     children: "Confidence unknown"
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 377,
+                                                    lineNumber: 391,
                                                     columnNumber: 56
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 372,
+                                            lineNumber: 386,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -442,7 +456,7 @@ function TestPage() {
                                                     children: "Source text:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 380,
+                                                    lineNumber: 394,
                                                     columnNumber: 21
                                                 }, this),
                                                 " ",
@@ -450,13 +464,13 @@ function TestPage() {
                                                     children: medication.sourceText ?? "Unknown"
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 381,
+                                                    lineNumber: 395,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 379,
+                                            lineNumber: 393,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -468,13 +482,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "name", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 385,
+                                                    lineNumber: 399,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 383,
+                                            lineNumber: 397,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -487,13 +501,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "genericName", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 394,
+                                                    lineNumber: 408,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 392,
+                                            lineNumber: 406,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -506,13 +520,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "dose", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 407,
+                                                    lineNumber: 421,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 405,
+                                            lineNumber: 419,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -525,13 +539,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "unit", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 416,
+                                                    lineNumber: 430,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 414,
+                                            lineNumber: 428,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -544,13 +558,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "frequency", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 425,
+                                                    lineNumber: 439,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 423,
+                                            lineNumber: 437,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -563,13 +577,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "route", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 438,
+                                                    lineNumber: 452,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 436,
+                                            lineNumber: 450,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -582,13 +596,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "duration", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 447,
+                                                    lineNumber: 461,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 445,
+                                            lineNumber: 459,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -601,13 +615,13 @@ function TestPage() {
                                                     onChange: (event)=>updateMedication(index, "startDate", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 460,
+                                                    lineNumber: 474,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 458,
+                                            lineNumber: 472,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -623,13 +637,13 @@ function TestPage() {
                                                     }
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 473,
+                                                    lineNumber: 487,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 471,
+                                            lineNumber: 485,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -646,7 +660,7 @@ function TestPage() {
                                                             children: "Unknown"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 499,
+                                                            lineNumber: 513,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -654,7 +668,7 @@ function TestPage() {
                                                             children: "High"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 500,
+                                                            lineNumber: 514,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -662,19 +676,19 @@ function TestPage() {
                                                             children: "Low"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 501,
+                                                            lineNumber: 515,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 486,
+                                                    lineNumber: 500,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 484,
+                                            lineNumber: 498,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -691,7 +705,7 @@ function TestPage() {
                                                             children: "Active"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 516,
+                                                            lineNumber: 530,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -699,7 +713,7 @@ function TestPage() {
                                                             children: "Stopped"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 517,
+                                                            lineNumber: 531,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -707,7 +721,7 @@ function TestPage() {
                                                             children: "Modified"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 518,
+                                                            lineNumber: 532,
                                                             columnNumber: 23
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("option", {
@@ -715,31 +729,31 @@ function TestPage() {
                                                             children: "Unknown"
                                                         }, void 0, false, {
                                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                            lineNumber: 519,
+                                                            lineNumber: 533,
                                                             columnNumber: 23
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 506,
+                                                    lineNumber: 520,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 504,
+                                            lineNumber: 518,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, medication.id, true, {
                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                    lineNumber: 371,
+                                    lineNumber: 385,
                                     columnNumber: 17
                                 }, this))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 365,
+                        lineNumber: 379,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("section", {
@@ -750,14 +764,14 @@ function TestPage() {
                                 children: "Lab orders"
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 528,
+                                lineNumber: 542,
                                 columnNumber: 13
                             }, this),
                             prescription.labOrders.length === 0 ? /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                                 children: "No lab orders were extracted."
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 530,
+                                lineNumber: 544,
                                 columnNumber: 15
                             }, this) : prescription.labOrders.map((order, index)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("fieldset", {
                                     children: [
@@ -768,7 +782,7 @@ function TestPage() {
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 534,
+                                            lineNumber: 548,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -777,7 +791,7 @@ function TestPage() {
                                                     children: "Source text:"
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 536,
+                                                    lineNumber: 550,
                                                     columnNumber: 21
                                                 }, this),
                                                 " ",
@@ -785,13 +799,13 @@ function TestPage() {
                                                     children: order.sourceText ?? "Unknown"
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 536,
+                                                    lineNumber: 550,
                                                     columnNumber: 51
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 535,
+                                            lineNumber: 549,
                                             columnNumber: 19
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -803,13 +817,13 @@ function TestPage() {
                                                     onChange: (event)=>updateLabOrder(index, "test", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 540,
+                                                    lineNumber: 554,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 538,
+                                            lineNumber: 552,
                                             columnNumber: 19
                                         }, this),
                                         " ",
@@ -822,25 +836,25 @@ function TestPage() {
                                                     onChange: (event)=>updateLabOrder(index, "date", event.currentTarget.value || null)
                                                 }, void 0, false, {
                                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                                    lineNumber: 549,
+                                                    lineNumber: 563,
                                                     columnNumber: 21
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                            lineNumber: 547,
+                                            lineNumber: 561,
                                             columnNumber: 19
                                         }, this)
                                     ]
                                 }, `${order.sourceText}-${index}`, true, {
                                     fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                    lineNumber: 533,
+                                    lineNumber: 547,
                                     columnNumber: 17
                                 }, this))
                         ]
                     }, void 0, true, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 527,
+                        lineNumber: 541,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("label", {
@@ -851,7 +865,7 @@ function TestPage() {
                                 onChange: (event)=>setDetailsConfirmed(event.currentTarget.checked)
                             }, void 0, false, {
                                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                                lineNumber: 562,
+                                lineNumber: 576,
                                 columnNumber: 13
                             }, this),
                             " ",
@@ -859,7 +873,7 @@ function TestPage() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 561,
+                        lineNumber: 575,
                         columnNumber: 11
                     }, this),
                     " ",
@@ -870,7 +884,7 @@ function TestPage() {
                         children: analyzeLoading ? "Analyzing…" : "Analyze"
                     }, void 0, false, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 569,
+                        lineNumber: 583,
                         columnNumber: 11
                     }, this),
                     analyzeLoading && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -878,7 +892,7 @@ function TestPage() {
                         children: "Analyzing confirmed orders…"
                     }, void 0, false, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 576,
+                        lineNumber: 590,
                         columnNumber: 30
                     }, this),
                     analyzeError && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -886,13 +900,13 @@ function TestPage() {
                         children: analyzeError
                     }, void 0, false, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 577,
+                        lineNumber: 591,
                         columnNumber: 28
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 340,
+                lineNumber: 354,
                 columnNumber: 9
             }, this),
             scanResponse && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("details", {
@@ -904,27 +918,27 @@ function TestPage() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 583,
+                        lineNumber: 597,
                         columnNumber: 11
                     }, this),
                     !identifiersVisible && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
                         children: "Identifiers are masked here by default."
                     }, void 0, false, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 584,
+                        lineNumber: 598,
                         columnNumber: 35
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
                         children: JSON.stringify(displayedScanJson(scanResponse, identifiersVisible), null, 2)
                     }, void 0, false, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 585,
+                        lineNumber: 599,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 582,
+                lineNumber: 596,
                 columnNumber: 9
             }, this),
             analyzeResponse && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("details", {
@@ -936,26 +950,26 @@ function TestPage() {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 596,
+                        lineNumber: 610,
                         columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$4$2e$0_$40$types$2b$node$40$25$2e$9$2e$6_react$2d$dom$40$19$2e$1$2e$0_react$40$19$2e$1$2e$0_$5f$react$40$19$2e$1$2e$0$2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("pre", {
                         children: JSON.stringify(analyzeResponse, null, 2)
                     }, void 0, false, {
                         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                        lineNumber: 597,
+                        lineNumber: 611,
                         columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-                lineNumber: 595,
+                lineNumber: 609,
                 columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/artifacts/pharmamrp/app/test/page.tsx",
-        lineNumber: 313,
+        lineNumber: 327,
         columnNumber: 5
     }, this);
 }

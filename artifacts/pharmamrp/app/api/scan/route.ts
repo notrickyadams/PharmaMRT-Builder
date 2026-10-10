@@ -166,7 +166,7 @@ function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription
   };
 }
 
-async function scan(request: Request, signal: AbortSignal) {
+async function scan(request: Request, signal: AbortSignal, requestId: string) {
   let stage: "request" | "gemini" | "json" | "validation" | "result" = "request";
   try {
     const apiKey = process.env.GEMINI_API_KEY;
@@ -181,7 +181,19 @@ async function scan(request: Request, signal: AbortSignal) {
     }
 
     stage = "gemini";
-    const ai = new GoogleGenAI({ apiKey });
+    const ai = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        retryOptions: {
+          attempts: 3,
+          httpStatusCodes: [500, 502, 503, 504],
+          initialDelay: 1,
+          maxDelay: 4,
+          expBase: 2,
+          jitter: 0.2,
+        },
+      },
+    });
     const response = await ai.models.generateContent({
       model: GEMINI_SCAN_MODEL,
       contents: [
@@ -228,6 +240,18 @@ async function scan(request: Request, signal: AbortSignal) {
     return Response.json({ prescription, source: "ai" });
   } catch (error) {
     // Return only safe categories and schema paths, never provider messages or patient data.
+    console.warn("scan.failed", {
+      requestId,
+      stage,
+      providerStatus: error instanceof ApiError ? error.status : null,
+      category: error instanceof ApiError
+        ? "provider"
+        : error instanceof z.ZodError
+          ? "validation"
+          : error instanceof SyntaxError
+            ? "json"
+            : "connection-or-internal",
+    });
     if (error instanceof ApiError) {
       if (error.status === 429) {
         return failure("Gemini rate limit or quota exceeded (HTTP 429). Please wait or check your API quota.");
@@ -239,7 +263,7 @@ async function scan(request: Request, signal: AbortSignal) {
         return failure("The configured scan model is unavailable to this Gemini API key (HTTP 404).");
       }
       if (error.status >= 500) {
-        return failure(`Gemini's scan service failed (HTTP ${error.status}). This is a service error, not an image-quality result. Please try again later.`);
+        return failure(`Gemini's scan service failed (HTTP ${error.status}) despite automatic retries. This is a service error, not an image-quality result. Please try again later.`);
       }
       if (error.status === 400) {
         return failure("Gemini rejected the scan request (HTTP 400). The image format or structured-output schema may be unsupported.");
@@ -268,6 +292,8 @@ async function scan(request: Request, signal: AbortSignal) {
 export async function POST(request: Request) {
   const encoder = new TextEncoder();
   const abort = new AbortController();
+  const requestId = crypto.randomUUID();
+  const started = Date.now();
   let heartbeat: ReturnType<typeof setInterval> | undefined;
   let closed = false;
 
@@ -291,10 +317,19 @@ export async function POST(request: Request) {
 
       void (async () => {
         try {
-          const response = await scan(request, abort.signal);
+          const response = await scan(request, abort.signal, requestId);
           const body = await response.text();
+          const result = JSON.parse(body) as { source?: unknown };
+          console.info("scan.response_ready", {
+            requestId,
+            elapsedMs: Date.now() - started,
+            responseBytes: encoder.encode(body).byteLength,
+            source: result.source === "ai" ? "ai" : "failed",
+            disconnected: closed,
+          });
           if (!closed) controller.enqueue(encoder.encode(body));
         } catch {
+          console.warn("scan.stream_failed", { requestId, elapsedMs: Date.now() - started });
           if (!closed) {
             controller.enqueue(encoder.encode(JSON.stringify({
               source: "failed",
@@ -314,6 +349,7 @@ export async function POST(request: Request) {
       closed = true;
       cleanup();
       abort.abort();
+      console.info("scan.disconnected", { requestId, elapsedMs: Date.now() - started });
     },
   });
 
@@ -323,6 +359,7 @@ export async function POST(request: Request) {
       "Content-Type": "application/json; charset=utf-8",
       "Cache-Control": "no-store, no-transform",
       "X-Accel-Buffering": "no",
+      "X-Scan-Request-Id": requestId,
     },
   });
 }

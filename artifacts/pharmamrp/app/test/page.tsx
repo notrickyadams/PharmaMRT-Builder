@@ -45,7 +45,21 @@ async function readApiResponse<T>(response: Response, action: "Scan" | "Analysis
   try {
     payload = JSON.parse(text);
   } catch {
-    throw new Error(`${action} service returned incomplete or invalid JSON. No result was accepted.`);
+    const reference = response.headers.get("x-scan-request-id");
+    const safeReference = reference && /^[a-f0-9-]{36}$/i.test(reference) ? reference : null;
+    const bytes = new TextEncoder().encode(text).byteLength;
+    const details = `HTTP ${response.status}; ${bytes} bytes${safeReference ? `; reference ${safeReference}` : ""}`;
+    const trimmed = text.trim();
+    if (!trimmed) {
+      throw new Error(`${action} connection closed before the final JSON result arrived (${details}). No result was accepted.`);
+    }
+    if (trimmed.startsWith("<") || /<!doctype|<html/i.test(trimmed)) {
+      throw new Error(`${action} gateway returned HTML instead of the final JSON result (${details}). No result was accepted.`);
+    }
+    if (!trimmed.endsWith("}") && !trimmed.endsWith("]")) {
+      throw new Error(`${action} JSON response was truncated (${details}). No result was accepted.`);
+    }
+    throw new Error(`${action} service returned invalid JSON (${details}). No result was accepted.`);
   }
 
   if (!payload || typeof payload !== "object") {

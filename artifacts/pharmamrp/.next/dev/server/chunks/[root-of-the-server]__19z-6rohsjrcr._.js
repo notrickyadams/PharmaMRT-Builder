@@ -367,7 +367,7 @@ function toPrescription(result) {
         status: "pending"
     };
 }
-async function scan(request, signal) {
+async function scan(request, signal, requestId) {
     let stage = "request";
     try {
         const apiKey = process.env.GEMINI_API_KEY;
@@ -381,7 +381,22 @@ async function scan(request, signal) {
         }
         stage = "gemini";
         const ai = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GoogleGenAI"]({
-            apiKey
+            apiKey,
+            httpOptions: {
+                retryOptions: {
+                    attempts: 3,
+                    httpStatusCodes: [
+                        500,
+                        502,
+                        503,
+                        504
+                    ],
+                    initialDelay: 1,
+                    maxDelay: 4,
+                    expBase: 2,
+                    jitter: 0.2
+                }
+            }
         });
         const response = await ai.models.generateContent({
             model: __TURBOPACK__imported__module__$5b$project$5d2f$artifacts$2f$pharmamrp$2f$lib$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GEMINI_SCAN_MODEL"],
@@ -435,6 +450,12 @@ async function scan(request, signal) {
         });
     } catch (error) {
         // Return only safe categories and schema paths, never provider messages or patient data.
+        console.warn("scan.failed", {
+            requestId,
+            stage,
+            providerStatus: error instanceof __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["ApiError"] ? error.status : null,
+            category: error instanceof __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["ApiError"] ? "provider" : error instanceof __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$25$2e$76$2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z__$2e$ZodError$3e$__["z"].ZodError ? "validation" : error instanceof SyntaxError ? "json" : "connection-or-internal"
+        });
         if (error instanceof __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["ApiError"]) {
             if (error.status === 429) {
                 return failure("Gemini rate limit or quota exceeded (HTTP 429). Please wait or check your API quota.");
@@ -446,7 +467,7 @@ async function scan(request, signal) {
                 return failure("The configured scan model is unavailable to this Gemini API key (HTTP 404).");
             }
             if (error.status >= 500) {
-                return failure(`Gemini's scan service failed (HTTP ${error.status}). This is a service error, not an image-quality result. Please try again later.`);
+                return failure(`Gemini's scan service failed (HTTP ${error.status}) despite automatic retries. This is a service error, not an image-quality result. Please try again later.`);
             }
             if (error.status === 400) {
                 return failure("Gemini rejected the scan request (HTTP 400). The image format or structured-output schema may be unsupported.");
@@ -474,6 +495,8 @@ async function scan(request, signal) {
 async function POST(request) {
     const encoder = new TextEncoder();
     const abort = new AbortController();
+    const requestId = crypto.randomUUID();
+    const started = Date.now();
     let heartbeat;
     let closed = false;
     const onDisconnect = ()=>abort.abort();
@@ -495,10 +518,22 @@ async function POST(request) {
             }, 10_000);
             void (async ()=>{
                 try {
-                    const response = await scan(request, abort.signal);
+                    const response = await scan(request, abort.signal, requestId);
                     const body = await response.text();
+                    const result = JSON.parse(body);
+                    console.info("scan.response_ready", {
+                        requestId,
+                        elapsedMs: Date.now() - started,
+                        responseBytes: encoder.encode(body).byteLength,
+                        source: result.source === "ai" ? "ai" : "failed",
+                        disconnected: closed
+                    });
                     if (!closed) controller.enqueue(encoder.encode(body));
                 } catch  {
+                    console.warn("scan.stream_failed", {
+                        requestId,
+                        elapsedMs: Date.now() - started
+                    });
                     if (!closed) {
                         controller.enqueue(encoder.encode(JSON.stringify({
                             source: "failed",
@@ -518,6 +553,10 @@ async function POST(request) {
             closed = true;
             cleanup();
             abort.abort();
+            console.info("scan.disconnected", {
+                requestId,
+                elapsedMs: Date.now() - started
+            });
         }
     });
     return new Response(stream, {
@@ -525,7 +564,8 @@ async function POST(request) {
         headers: {
             "Content-Type": "application/json; charset=utf-8",
             "Cache-Control": "no-store, no-transform",
-            "X-Accel-Buffering": "no"
+            "X-Accel-Buffering": "no",
+            "X-Scan-Request-Id": requestId
         }
     });
 }

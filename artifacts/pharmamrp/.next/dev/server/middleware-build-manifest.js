@@ -26,7 +26,7 @@ globalThis.__BUILD_MANIFEST = {
     "static/chunks/turbopack-artifacts_pharmamrp_0kdavcsixulte._.js"
   ],
   "rootMainFilesTree": {
-    "/_not-found/page": [
+    "/page": [
       "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_1u77ql0los1p3._.js",
       "static/chunks/0o91_next_dist_compiled_react-dom_cjs_react-dom-client_development_089yz5igta0g4.js",
       "static/chunks/0o91_next_dist_compiled_react-dom_cjs_react-dom_development_0scv8ufga3u2s.js",
@@ -39,7 +39,7 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/0zix_@swc_helpers_cjs_0hi-e474n4mns._.js",
       "static/chunks/artifacts_pharmamrp_1anvha4rlo79g._.js",
       "static/chunks/turbopack-artifacts_pharmamrp_0kdavcsixulte._.js",
-      "static/chunks/artifacts_pharmamrp_18x7jxupx5rou._.js"
+      "static/chunks/artifacts_pharmamrp_219uq1sj0q91c._.js"
     ],
     "/test/page": [
       "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_1u77ql0los1p3._.js",

@@ -12,6 +12,17 @@
     ]
   },
   {
+    "route": "/",
+    "firstLoadUncompressedJsBytes": 455847,
+    "firstLoadChunkPaths": [
+      ".next/static/chunks/1po5pr1l4v_x9.js",
+      ".next/static/chunks/307dfhjpqu2q_.js",
+      ".next/static/chunks/0rr-cdz-m1op1.js",
+      ".next/static/chunks/2fus1bmn25jpz.js",
+      ".next/static/chunks/turbopack-3-ry682tkyiqk.js"
+    ]
+  },
+  {
     "route": "/_not-found",
     "firstLoadUncompressedJsBytes": 455847,
     "firstLoadChunkPaths": [

@@ -107,7 +107,7 @@
     },
     "outputFileTracingRoot": "/home/runner/workspace",
     "allowedDevOrigins": [
-      "*.replit.dev"
+      "**.replit.dev"
     ],
     "enablePrerenderSourceMaps": true,
     "cacheComponents": false,

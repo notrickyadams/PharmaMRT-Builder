@@ -1,36 +1,50 @@
 {
   "source": "demo",
   "exampleId": "demo-1",
-  "demoNotice": "Fictional suggestions only. Pharmacist review is required; not for clinical use.",
+  "demoNotice": "Fictional presentation suggestions only. Pharmacist review is required; not for clinical use. Includes an intentionally rejectable suggestion.",
   "prescriptionId": "demo-prescription-1",
   "problems": [
     {
       "id": "demo-1-problem-1",
-      "medicationIds": ["demo-1-med-1"],
+      "medicationIds": ["demo-1-med-5"],
       "problemCode": "P3",
-      "causeCode": "C4",
-      "explanation": "The fictional order explicitly omits the antibiotic duration. Clarify it with the prescriber.",
-      "severity": "low",
+      "causeCode": "C3",
+      "explanation": "The modified, low-confidence Clexane entry reads '60 unit sc'. Clarify the rewritten dose and unit with the prescriber before accepting this transcription; do not convert or guess the unit.",
+      "severity": "moderate",
       "suggestedIntervention": "I1",
       "finalIntervention": null,
       "acceptance": null,
       "reviewStatus": "suggested",
-      "highlights": ["duration not specified"],
+      "highlights": ["clexane 60 unit sc"],
       "notes": null
     },
     {
       "id": "demo-1-problem-2",
-      "medicationIds": ["demo-1-med-2"],
+      "medicationIds": ["demo-1-med-12"],
       "problemCode": "P3",
-      "causeCode": "C3",
-      "explanation": "The fictional order explicitly omits the paracetamol dose. Clarify it rather than guessing.",
+      "causeCode": "C1",
+      "explanation": "Rivarospire has low extraction confidence and no confirmed generic name. Verify the medication identity against the original order rather than inferring it from the brand spelling.",
       "severity": "low",
       "suggestedIntervention": "I1",
       "finalIntervention": null,
       "acceptance": null,
       "reviewStatus": "suggested",
-      "highlights": ["dose not specified"],
+      "highlights": ["Rivarospire 10 mg tab"],
       "notes": null
+    },
+    {
+      "id": "demo-1-problem-3",
+      "medicationIds": ["demo-1-med-1", "demo-1-med-11"],
+      "problemCode": "P2",
+      "causeCode": "C1",
+      "explanation": "Possible duplicate antibiotic orders for Rocephin and Unasyn. Ask the prescriber whether Rocephin should be discontinued.",
+      "severity": "moderate",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["Rocephin 2 gm IV", "unasyn 1.5 gm IV"],
+      "notes": "Presentation review cue: reject this deliberately flawed suggestion. Rocephin is already marked stopped, so these entries do not establish concurrent therapy. Do not treat this fictional suggestion as clinical advice."
     }
   ]
 }

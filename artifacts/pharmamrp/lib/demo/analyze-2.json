@@ -1,7 +1,7 @@
 {
   "source": "demo",
   "exampleId": "demo-2",
-  "demoNotice": "Fictional suggestions only. Pharmacist review is required; not for clinical use.",
+  "demoNotice": "Fictional presentation suggestions only. Pharmacist review is required; not for clinical use. Includes an intentionally rejectable suggestion.",
   "prescriptionId": "demo-prescription-2",
   "problems": [
     {
@@ -31,6 +31,20 @@
       "reviewStatus": "suggested",
       "highlights": ["duration not specified"],
       "notes": null
+    },
+    {
+      "id": "demo-2-problem-3",
+      "medicationIds": ["demo-2-med-1"],
+      "problemCode": "P3",
+      "causeCode": "C5",
+      "explanation": "The ibuprofen administration route may be missing. Ask the prescriber to specify it.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["Ibuprofen 400 mg oral"],
+      "notes": "Presentation review cue: reject this deliberately flawed suggestion. The exact order already states the oral route. This demonstrates checking the source rather than accepting every suggestion."
     }
   ]
 }

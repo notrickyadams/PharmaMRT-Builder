@@ -1,15 +1,19 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 import { z } from "zod";
 import { CAUSE_CODES, INTERVENTION_CODES, PROBLEM_CODES } from "@/lib/classification";
 import { DEMO_MODE, GEMINI_MODEL } from "@/lib/config";
 import { demoResponse } from "@/lib/demo/index";
 import type { Medication, Prescription, Problem } from "@/lib/types";
+import {
+  createGeminiClient, jsonContract, readBoundedJson, REQUEST_TIMEOUT_MS, structuredOutput,
+} from "../_lib/gemini";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
 
-const REQUEST_TIMEOUT_MS = 15_000;
-const MAX_BASE64_LENGTH = 18_000_000;
+const MAX_IMAGE_BYTES = 7_999_999;
+const MAX_BASE64_LENGTH = 4 * Math.ceil(MAX_IMAGE_BYTES / 3);
+const MAX_REQUEST_BYTES = MAX_BASE64_LENGTH + 1_024;
 const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
 
 const ScanRequestSchema = z
@@ -157,7 +161,7 @@ function describeFailure(error: unknown, stage: ScanStage, timedOut: boolean) {
     message = "The image request is invalid. Please upload a JPEG, PNG, or WebP image and retry.";
   } else if (stage === "configuration") {
     reason = "configuration";
-    message = "Scanning is not configured. Ask the app administrator to check the Gemini API key.";
+    message = "Scanning is not configured. Ask the app administrator to check the selected Gemini provider and managed access or personal API key configuration.";
   } else if (stage === "generation" && status) {
     reason = status === 429 ? "provider_quota" :
       [401, 403].includes(status) ? "provider_access" :
@@ -165,7 +169,7 @@ function describeFailure(error: unknown, stage: ScanStage, timedOut: boolean) {
     message = status === 429
       ? "Gemini rejected the scan because of a rate or quota limit. Ask the administrator to check generation quota, or retry later."
       : [401, 403].includes(status)
-        ? "Gemini denied access. Ask the administrator to check the API key and model permissions."
+        ? "Gemini denied access. Ask the administrator to check the selected provider's access and model permissions."
         : status >= 500
           ? "Gemini is temporarily unavailable. Please retry later or use manual entry."
           : "Gemini rejected the scan request. Ask the administrator to check the scan configuration.";
@@ -245,23 +249,15 @@ export async function POST(request: Request) {
     });
 
     const work = (async () => {
-      const body = ScanRequestSchema.parse(await request.json());
+      const body = ScanRequestSchema.parse(await readBoundedJson(request, MAX_REQUEST_BYTES, controller.signal));
       const imageBytes = Buffer.from(body.imageBase64, "base64");
-      if (imageBytes.length === 0 || imageBytes.length > 13_500_000 ||
+      if (imageBytes.length === 0 || imageBytes.length > MAX_IMAGE_BYTES ||
         imageBytes.toString("base64") !== body.imageBase64) {
         throw new Error("Invalid image size.");
       }
 
       stage = "configuration";
-      if (!process.env.GEMINI_API_KEY) {
-        throw new Error("Gemini is not configured.");
-      }
-      const ai = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY,
-        // SDK retries turn a fast overload rejection into a deadline failure.
-        // Keep one generation attempt inside the scan's bounded timeout.
-        httpOptions: { timeout: REQUEST_TIMEOUT_MS, retryOptions: { attempts: 1 } },
-      });
+      const ai = createGeminiClient();
       stage = "generation";
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
@@ -279,15 +275,14 @@ export async function POST(request: Request) {
                   "Use only the supplied broad PCNE codes: P1 treatment effectiveness, P2 treatment safety, P3 other; C1 drug selection, C2 drug form, C3 dose selection, C4 treatment duration, C5 drug use process, C6 logistics, C7 patient, C8 patient transfer related, C9 other; I0 no intervention, I1 prescriber, I2 patient, I3 drug, I4 other.",
                   "For medicationIndexes use zero-based indexes into the medications array. Every highlight must be an exact quote from the sourceText of one of the referenced medications. Do not place names or ID numbers in explanations or highlights.",
                   "If a code, severity, or explanation is not clear, return null for that value.",
-                ].join(" "),
+                ].join(" ") + jsonContract(modelResponseSchema),
               },
               { inlineData: { mimeType: body.mimeType, data: body.imageBase64 } },
             ],
           },
         ],
         config: {
-          responseMimeType: "application/json",
-          responseSchema: modelResponseSchema,
+          ...structuredOutput(modelResponseSchema),
           abortSignal: controller.signal,
         },
       });

@@ -1,0 +1,30 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "353ygV3Rbf3oqx8SgPMVV"
+uri = "file://.local/managed-gemini-results/raw-results.txt"
+type = "text"
+title = "Complete fictional scan and analyze results"
+description = "Raw endpoint responses, HTTP statuses, model/provider, validation outcomes, and disclosed fictional analysis substitution. Both requests failed configuration; no Gemini generation occurred."
+logical_id = "7add570e-8693-44b4-a165-98ff84601399"
+content_hash = "sha256:35843cff67e3191d86e042940048266b0eae338f456efd54605249fb9c99c9ce"
+size = 1246
+mtime_ms = 1791633420442
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:8454f478-d819-47e7-be41-768023805dd1/7add570e-8693-44b4-a165-98ff84601399/1e26c257-6a25-4640-bfb4-a0c2c6163da0"
+storage_version_token = "1791633460518471"
+content_type = "text/plain"
+
+[[outputs]]
+id = "usenOAy2Qn8HPCI0RCZ1s"
+uri = "file://.local/presentation-demo-results/results.txt"
+type = "text"
+title = "Presentation demo: complete scan and analyze results"
+description = "Both matching Example 1 requests returned HTTP 200: scan in 5.277 seconds, analyze in 3.514 seconds. Includes 12 medications, 16 lab orders, three suggested problems, and complete raw responses. No Gemini calls."
+logical_id = "efe8104f-e65d-45b4-8d57-3185723b31bc"
+content_hash = "sha256:305f6fe83734a4cb026bbc3c4b4395624e304dd9c989047c789d4747f31e2630"
+size = 8166
+mtime_ms = 1791634211548
+storage_uri = "gcs://replit-rams-assets-janeway/rams/assets/repl:8454f478-d819-47e7-be41-768023805dd1/efe8104f-e65d-45b4-8d57-3185723b31bc/43677b67-2fb5-4bf0-96db-c82970774259"
+storage_version_token = "1791634285223292"
+content_type = "text/plain"

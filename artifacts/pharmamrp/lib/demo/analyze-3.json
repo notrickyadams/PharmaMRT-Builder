@@ -1,7 +1,7 @@
 {
   "source": "demo",
   "exampleId": "demo-3",
-  "demoNotice": "Fictional suggestions only. Pharmacist review is required; not for clinical use.",
+  "demoNotice": "Fictional presentation suggestions only. Pharmacist review is required; not for clinical use. Includes an intentionally rejectable suggestion.",
   "prescriptionId": "demo-prescription-3",
   "problems": [
     {
@@ -31,6 +31,20 @@
       "reviewStatus": "suggested",
       "highlights": ["duration: 3 days / 7 days"],
       "notes": null
+    },
+    {
+      "id": "demo-3-problem-3",
+      "medicationIds": ["demo-3-med-1"],
+      "problemCode": "P3",
+      "causeCode": "C3",
+      "explanation": "The metformin dose unit may be missing. Ask the prescriber to clarify the unit.",
+      "severity": "low",
+      "suggestedIntervention": "I1",
+      "finalIntervention": null,
+      "acceptance": null,
+      "reviewStatus": "suggested",
+      "highlights": ["Metformin 500 mg"],
+      "notes": "Presentation review cue: reject this deliberately flawed suggestion. The exact order already specifies 500 mg; only the frequency is missing. This demonstrates reviewing each suggestion against its cited text."
     }
   ]
 }

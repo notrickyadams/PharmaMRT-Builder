@@ -116,15 +116,3 @@ FAM | META SEQ | SST SEQ         | RANGE
   1 | 00000061 | 00000034 00000036 00000045 00000053 OBSOLETE SST
     |          | 00000034 00000036 00000045 00000053 SST DELETED
     |          | 00000040 00000050 00000058 META DELETED
-Time 2026-10-10T10:10:25.497459502Z
-Commit 00000068 2572 keys in 148ms 609µs 121ns
-FAM | META SEQ | SST SEQ         | RANGE
-  0 | 00000066 | 00000065 SST    |                                                                             O                        | c44bdff4074eecdb-c44bdff4074eecdb (0 MiB, fresh, 38 bytes, 1 entries, 0 tombstones)
-  1 | 00000067 | 00000064 SST    | [==================================================================================================] | 0011f9ee008329c7-fff397d6145cfa1b (0 MiB, fresh, 601697 bytes, 2184 entries, 0 tombstones)
-  2 | 00000068 | 00000063 SST    | [==================================================================================================] | 00eef7159f7c20fc-ff6aed7dd70454c1 (0 MiB, fresh, 187551 bytes, 387 entries, 0 tombstones)
-Time 2026-10-10T10:10:51.865087196Z
-Commit 00000074 1256 keys in 59ms 585µs 469ns
-FAM | META SEQ | SST SEQ         | RANGE
-  0 | 00000072 | 00000071 SST    |                                                                             O                        | c44bdff4074eecdb-c44bdff4074eecdb (0 MiB, fresh, 38 bytes, 1 entries, 0 tombstones)
-  1 | 00000073 | 00000070 SST    | [==================================================================================================] | 0011f9ee008329c7-fff397d6145cfa1b (0 MiB, fresh, 471973 bytes, 1213 entries, 0 tombstones)
-  2 | 00000074 | 00000069 SST    | [=================================================================================================]  | 019a4deb28f0db2d-fc7053f08dd8b74a (0 MiB, fresh, 45215 bytes, 42 entries, 0 tombstones)

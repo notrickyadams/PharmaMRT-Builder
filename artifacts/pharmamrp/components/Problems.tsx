@@ -28,12 +28,18 @@ export default function Problems({ problems, review, onChange, onDraftChange }: 
   useEffect(() => { onDraftChange(!!draft); }, [draft, onDraftChange]);
   function update(p: Problem) { onChange(problems.map(x => x.id === p.id ? p : x)); }
   function edit(p: Problem) { setEditing(p.id); setDraft({ ...p, medicationIds: [...p.medicationIds] }); }
+  function decisionLabel(status: Problem["reviewStatus"]) {
+    if (status === "suggested") return "AI suggestion · needs pharmacist review";
+    if (status === "accepted") return "Accepted by pharmacist";
+    if (status === "edited") return "Edited by pharmacist";
+    if (status === "rejected") return "Rejected by pharmacist";
+    return "Pharmacist-authored problem";
+  }
   return <section><h2>Pharmacist decisions</h2>
     <p>Decide every suggestion. Accepting a problem does not mean the prescriber accepted an intervention.</p>
     {!problems.length && <p>No suggested problems. You can save a zero-problem reviewed case or add a problem yourself.</p>}
     {problems.map(p => <article className={`${styles.card} ${styles[p.severity ?? "low"]}`} key={p.id}>
-      {p.reviewStatus !== "added" && <strong>AI suggestion — needs pharmacist review</strong>}
-      {p.reviewStatus === "added" && <strong>Pharmacist-authored problem</strong>}
+      <strong>{decisionLabel(p.reviewStatus)}</strong>
       <ProblemRead problem={p} review={review} />
       <div className={styles.row}>
         {p.reviewStatus !== "added" && <button type="button" disabled={!!draft} onClick={() => {

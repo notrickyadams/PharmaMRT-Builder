@@ -15,9 +15,19 @@ registerHooks({
       return { url: mockProviderUrl, shortCircuit: true };
     if (specifier.startsWith("@/"))
       return { url: new URL(`${specifier.slice(2)}.ts`, root).href, shortCircuit: true };
+    if (specifier.startsWith(".") && !/\.[a-z]+$/i.test(specifier) && context.parentURL?.startsWith(root.href))
+      return { url: new URL(`${specifier}.ts`, context.parentURL).href, shortCircuit: true };
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
+    // Exercise the personal-provider scan contract entirely against the mock.
+    // The app itself stays in demo mode; these tests never make a network call.
+    if (url === new URL("lib/config.ts", root).href) return {
+      format: "module", shortCircuit: true,
+      source: `export const DEMO_MODE = false;
+        export const GEMINI_PROVIDER = "personal";
+        export const GEMINI_MODEL = "synthetic-test-model";`,
+    };
     if (url === mockProviderUrl) return {
       format: "module",
       shortCircuit: true,
@@ -142,7 +152,7 @@ test("invalid input never calls Gemini", async () => {
 
 test("missing configuration is actionable and sanitized", async () => {
   delete process.env.GEMINI_API_KEY;
-  await failed(request(), "configuration", "configuration", /check the Gemini API key/);
+  await failed(request(), "configuration", "configuration", /check the selected Gemini provider/);
   assert.equal(globalThis.scanTest.calls.length, 0);
 });
 

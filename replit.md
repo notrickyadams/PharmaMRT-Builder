@@ -1,45 +1,46 @@
-# [Project name]
+# PharmaMRP
+AI documentation assistant for clinical pharmacists. Hackathon demo.
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+## Problem
+Clinical pharmacists find medication-related problems (MRPs) in prescriptions, such as drug
+interactions, wrong doses or duplicate therapy, and make interventions. They document every case
+by hand on paper and count them manually for a monthly report. It takes hours and data gets lost.
 
-## Run & Operate
+## Solution
+Photograph a prescription. The AI lists the medications and suggests MRPs with categories.
+The pharmacist accepts, edits or rejects each one. One click generates the monthly report.
+Core rule: the AI suggests, the pharmacist decides.
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+## Main features
+1. Scan prescription → editable medication list
+2. AI MRP suggestions, each citing the exact prescription text it came from
+3. Pharmacist review: accept, edit, reject, or add a missed problem
+4. Records log
+5. Monthly report with .xlsx export
+6. Manual entry form if the scan or AI fails
+
+## Data (lib/types.ts)
+Prescription: id, scannedAt, ward, patientAge, patientGender, medications, problems, status (pending | reviewed).
+Medication: id, name, dose, unit, frequency, route, duration, sourceText.
+Problem: id, medicationIds, problemCode, causeCode, explanation, severity (low | moderate | high),
+suggestedIntervention, finalIntervention, acceptance, reviewStatus
+(suggested | accepted | edited | rejected | added), highlights (exact source text), notes.
+
+## Classification (lib/classification.ts)
+PCNE: Problems P1–P3, Causes C1–C9, Interventions I0–I4, Acceptance A1–A3.
+
+## Hub and spoke
+Hub files: replit.md, lib/types.ts, lib/classification.ts. Never edit them unless I ask.
+Each task only changes the folder named in its prompt.
 
 ## Stack
+Next.js App Router, TypeScript, Tailwind, Framer Motion, SheetJS.
+AI: Gemini via @google/genai, key in GEMINI_API_KEY (server only), model name in lib/config.ts.
+Structured JSON output, validated. On failure or timeout, fall back to manual entry. Never crash.
+Storage: localStorage in try/catch, plus a "Reset demo" button.
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
-
-## Where things live
-
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+## Rules
+- Never store patient names or IDs. Only ward, age, gender, medications.
+- Never invent interactions or facts. Demo uses fictional prescriptions only.
+- Arabic renders right-to-left. Mobile first (375px).
+- Smallest change that does the job. No extra libraries unless asked.

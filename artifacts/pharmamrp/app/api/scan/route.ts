@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { ApiError, GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
 import { GEMINI_SCAN_MODEL } from "@/lib/config";
 import type { Confidence, LabOrder, Medication, MedicationOrderStatus, Prescription } from "@/lib/types";
@@ -137,7 +137,7 @@ const modelResponseSchema = {
   ],
 };
 
-function failure(error = "Scan could not be completed. Please check the image and try again.") {
+function failure(error: string) {
   return Response.json({ source: "failed", error }, { status: 200 });
 }
 
@@ -167,18 +167,20 @@ function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription
 }
 
 export async function POST(request: Request) {
+  let stage: "request" | "gemini" | "json" | "validation" | "result" = "request";
   try {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      throw new Error("Gemini is not configured.");
+      return failure("The scan service is missing its Gemini API configuration.");
     }
 
     const body = ScanRequestSchema.parse(await request.json());
     const imageBytes = Buffer.from(body.imageBase64, "base64");
     if (imageBytes.length === 0 || imageBytes.length > 21_000_000) {
-      throw new Error("Invalid image size.");
+      return failure("The uploaded image is empty or exceeds the scan size limit.");
     }
 
+    stage = "gemini";
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: GEMINI_SCAN_MODEL,
@@ -213,13 +215,51 @@ export async function POST(request: Request) {
     });
 
     if (!response.text) {
-      throw new Error("Gemini returned no structured result.");
+      return failure("Gemini returned no scan data. No prescription was extracted.");
     }
 
-    const parsed = modelResultSchema.parse(JSON.parse(response.text));
+    stage = "json";
+    const json = JSON.parse(response.text);
+    stage = "validation";
+    const parsed = modelResultSchema.parse(json);
+    stage = "result";
     const prescription = toPrescription(parsed);
     return Response.json({ prescription, source: "ai" });
-  } catch {
-    return failure();
+  } catch (error) {
+    // Return only safe categories and schema paths, never provider messages or patient data.
+    if (error instanceof ApiError) {
+      if (error.status === 429) {
+        return failure("Gemini rate limit or quota exceeded (HTTP 429). Please wait or check your API quota.");
+      }
+      if (error.status === 401 || error.status === 403) {
+        return failure(`Gemini denied access (HTTP ${error.status}). Check the API key's permissions.`);
+      }
+      if (error.status === 404) {
+        return failure("The configured scan model is unavailable to this Gemini API key (HTTP 404).");
+      }
+      if (error.status >= 500) {
+        return failure(`Gemini's scan service failed (HTTP ${error.status}). This is a service error, not an image-quality result. Please try again later.`);
+      }
+      if (error.status === 400) {
+        return failure("Gemini rejected the scan request (HTTP 400). The image format or structured-output schema may be unsupported.");
+      }
+      return failure(`Gemini could not process the scan (HTTP ${error.status}).`);
+    }
+    if (error instanceof z.ZodError) {
+      if (stage === "request") {
+        return failure("The image upload request is invalid. Expected a base64 image with a JPEG, PNG, or WebP MIME type.");
+      }
+      const fields = [...new Set(error.issues.map((issue) => issue.path.join(".") || "root"))];
+      return failure(`Gemini returned scan data that failed validation at: ${fields.slice(0, 8).join(", ")}. No prescription was accepted.`);
+    }
+    if (error instanceof SyntaxError) {
+      return failure(stage === "request"
+        ? "The upload request was not valid JSON."
+        : "Gemini returned invalid JSON. No prescription was accepted.");
+    }
+    if (stage === "gemini") {
+      return failure("Could not complete the connection to Gemini. Please try again later.");
+    }
+    return failure(`Scan failed during the ${stage} step. No prescription was accepted.`);
   }
 }

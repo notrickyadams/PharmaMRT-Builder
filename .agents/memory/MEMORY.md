@@ -1,0 +1,1 @@
+- [Next.js preview reliability](next-preview-reliability.md) — workspace restores can corrupt persisted Turbopack metadata; keep generated output out of version tracking.

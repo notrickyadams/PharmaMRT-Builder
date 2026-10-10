@@ -40,6 +40,9 @@ export default function RecordDetailPage() {
           <blockquote dir="auto">{display(m.sourceText)}</blockquote>
         </div>)}</details>
       </section>
+      <section><h2>Administration</h2><p>Record a given or missed dose against this saved reviewed case. Prescription details remain a reference; actual administration is entered separately.</p>
+        <Link className={styles.secondary} href={`/administration?case=${encodeURIComponent(record.id)}`}>Open administration for this case</Link>
+      </section>
       <section><h2>Verified labs</h2><p>Orders are not results.</p>{[...new Set(record.review.labs.map(l => l.date))].map(date => <div key={date ?? "undated"}>
         <h3>{date ?? "Undated"}</h3><div className={styles.row}>{record.review.labs.filter(l => l.date === date).map(l => <span className={styles.chip} key={l.id} dir="auto">
           {display(l.name)} · {l.kind === "order" ? "order" : `${display(l.value)} ${display(l.unit)}`}

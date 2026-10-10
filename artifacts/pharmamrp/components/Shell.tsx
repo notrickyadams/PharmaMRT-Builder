@@ -14,6 +14,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <Link href="/">Home</Link>
           <Link href="/scan">Scan</Link>
           <Link href="/records">Records</Link>
+          <Link href="/administration">Administration</Link>
         </nav>
       </header>
       <main>{children}</main>

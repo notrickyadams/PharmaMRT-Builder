@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   LabOrder,
   Medication,
@@ -158,12 +158,19 @@ export default function TestPage() {
   const [scanResponse, setScanResponse] = useState<ScanResponse | null>(null);
   const [analyzeResponse, setAnalyzeResponse] = useState<AnalyzeResponse | null>(null);
   const [scanLoading, setScanLoading] = useState(false);
+  const [scanProgress, setScanProgress] = useState<"Uploading…" | "Reading the sheet…">("Uploading…");
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [storageNotice, setStorageNotice] = useState<string | null>(null);
   const [identifiersVisible, setIdentifiersVisible] = useState(false);
   const [detailsConfirmed, setDetailsConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (!scanLoading) return;
+    const timer = window.setTimeout(() => setScanProgress("Reading the sheet…"), 1500);
+    return () => window.clearTimeout(timer);
+  }, [scanLoading]);
 
   function clearSavedIdentifiers() {
     try {
@@ -227,6 +234,7 @@ export default function TestPage() {
     setAnalyzeError(null);
     setIdentifiersVisible(false);
     setDetailsConfirmed(false);
+    setScanProgress("Uploading…");
     setScanLoading(true);
 
     try {
@@ -347,7 +355,7 @@ export default function TestPage() {
       <button type="button" onClick={scan} disabled={!file || isBusy}>
         {scanLoading ? "Scanning…" : "Scan"}
       </button>
-      {scanLoading && <p role="status">Scanning prescription…</p>}
+      {scanLoading && <p role="status" aria-live="polite">{scanProgress}</p>}
       {scanError && <p role="alert">{scanError}</p>}
 
       {prescription && (

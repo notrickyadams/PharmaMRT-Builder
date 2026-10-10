@@ -493,81 +493,17 @@ async function scan(request, signal, requestId) {
     }
 }
 async function POST(request) {
-    const encoder = new TextEncoder();
-    const abort = new AbortController();
     const requestId = crypto.randomUUID();
     const started = Date.now();
-    let heartbeat;
-    let closed = false;
-    const onDisconnect = ()=>abort.abort();
-    request.signal.addEventListener("abort", onDisconnect, {
-        once: true
+    const response = await scan(request, request.signal, requestId);
+    response.headers.set("Cache-Control", "no-store");
+    response.headers.set("X-Scan-Request-Id", requestId);
+    console.info("scan.completed", {
+        requestId,
+        elapsedMs: Date.now() - started,
+        status: response.status
     });
-    if (request.signal.aborted) abort.abort();
-    function cleanup() {
-        if (heartbeat) clearInterval(heartbeat);
-        request.signal.removeEventListener("abort", onDisconnect);
-    }
-    const stream = new ReadableStream({
-        start (controller) {
-            // JSON permits leading whitespace. Flush headers immediately and keep the
-            // connection active while Gemini works, without persisting scan results.
-            controller.enqueue(encoder.encode(`${" ".repeat(1024)}\n`));
-            heartbeat = setInterval(()=>{
-                if (!closed) controller.enqueue(encoder.encode(" \n"));
-            }, 10_000);
-            void (async ()=>{
-                try {
-                    const response = await scan(request, abort.signal, requestId);
-                    const body = await response.text();
-                    const result = JSON.parse(body);
-                    console.info("scan.response_ready", {
-                        requestId,
-                        elapsedMs: Date.now() - started,
-                        responseBytes: encoder.encode(body).byteLength,
-                        source: result.source === "ai" ? "ai" : "failed",
-                        disconnected: closed
-                    });
-                    if (!closed) controller.enqueue(encoder.encode(body));
-                } catch  {
-                    console.warn("scan.stream_failed", {
-                        requestId,
-                        elapsedMs: Date.now() - started
-                    });
-                    if (!closed) {
-                        controller.enqueue(encoder.encode(JSON.stringify({
-                            source: "failed",
-                            error: "The scan response could not be completed. Please try again."
-                        })));
-                    }
-                } finally{
-                    cleanup();
-                    if (!closed) {
-                        closed = true;
-                        controller.close();
-                    }
-                }
-            })();
-        },
-        cancel () {
-            closed = true;
-            cleanup();
-            abort.abort();
-            console.info("scan.disconnected", {
-                requestId,
-                elapsedMs: Date.now() - started
-            });
-        }
-    });
-    return new Response(stream, {
-        status: 200,
-        headers: {
-            "Content-Type": "application/json; charset=utf-8",
-            "Cache-Control": "no-store, no-transform",
-            "X-Accel-Buffering": "no",
-            "X-Scan-Request-Id": requestId
-        }
-    });
+    return response;
 }
 }),
 "[project]/artifacts/pharmamrp/lib/config.ts [app-route] (ecmascript)", ((__turbopack_context__) => {

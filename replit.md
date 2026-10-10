@@ -36,21 +36,18 @@ Each task only changes the folder named in its prompt.
 ## Stack
 Next.js App Router, TypeScript, Tailwind, Framer Motion, SheetJS.
 AI: Gemini via @google/genai, key in GEMINI_API_KEY (server only), model name in lib/config.ts.
-Structured JSON output, validated. On failure, return a failed-result envelope and keep manual entry as fallback. Never crash.
+Structured JSON output, validated. On failure or timeout, fall back to manual entry. Never crash.
 Storage: localStorage in try/catch, plus a "Reset demo" button.
 
 ## Rules
-- Patient name and file number are stored locally only, masked on screen by default, and never sent to the analyze step. The demo uses fictional patients only.
+- Never store patient names or IDs. Only ward, age, gender, medications.
 - Never invent interactions or facts. Demo uses fictional prescriptions only.
 - Arabic renders right-to-left. Mobile first (375px).
 - Smallest change that does the job. No extra libraries unless asked.
 
 ## Implemented foundation
 - The Next.js App Router app is in `artifacts/pharmamrp`.
-- `/test` is a bare two-step scan-and-analyze page. It resizes images to a maximum dimension of about 2400px, displays low-confidence medication rows and lab orders, masks identifiers by default, and shows raw JSON for both steps.
-- `POST /api/scan` uses `@google/genai` on the server with `GEMINI_API_KEY`, structured JSON output, and Zod validation. It extracts identifiers, medications, and lab orders; it does not generate problems.
-- Scan uses `gemini-3-flash-preview` and streams JSON-compatible whitespace keepalives while Gemini works, without a custom scan timeout or persistent server-side result storage. The test page checks HTTP status, content type, and response shape and reports gateway/connection failures without displaying HTML or raw parsing errors.
-- Scan explicitly allows up to three Gemini attempts for temporary HTTP 500/502/503/504 failures. Response references and server diagnostics include only status, stage, timing, and byte counts; prescription contents, identifiers, and raw provider errors are never logged.
-- `POST /api/analyze` accepts only medications, lab orders, ward, age, and gender. It uses the configured analyze model, validates structured PCNE suggestions, and never receives patientName or fileNumber.
-- `lib/types.ts` includes nullable scan fields, medication confidence/order details, and lab orders. `lib/config.ts` exposes separate scan and analyze Gemini models. Missing or uncertain values remain null; problems require exact source highlights.
+- `/test` is a bare image-upload test page. It resizes images to a maximum dimension of about 1600px and displays the raw scan JSON and its source.
+- `POST /api/scan` uses `@google/genai` on the server with `GEMINI_API_KEY`, structured JSON output, and Zod validation. It uses `gemini-3.8-flash`, allows up to 15 seconds for the scan, returns a failed-result envelope on errors, and does not return patient names or ID fields.
+- `lib/types.ts` and `lib/classification.ts` define the nullable prescription data model and PCNE group-code constants. Missing or uncertain extracted values remain null; suggested problems require an exact quote from the prescription.
 - This step adds only the app foundation and scan test surface. Records, pharmacist review, manual-entry workflow, local persistence, and reports are not implemented yet.

@@ -42,12 +42,6 @@
       "namedRegex": "^/_not\\-found(?:/)?$"
     },
     {
-      "page": "/api/analyze",
-      "regex": "^/api/analyze(?:/)?$",
-      "routeKeys": {},
-      "namedRegex": "^/api/analyze(?:/)?$"
-    },
-    {
       "page": "/api/scan",
       "regex": "^/api/scan(?:/)?$",
       "routeKeys": {},

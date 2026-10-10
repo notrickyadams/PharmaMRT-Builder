@@ -1,7 +1,8 @@
 {
   "version": 1,
   "functions": {
-    "/api/analyze": {},
-    "/api/scan": {}
+    "/api/scan": {
+      "maxDuration": 20
+    }
   }
 }

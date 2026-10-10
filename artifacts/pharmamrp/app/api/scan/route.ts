@@ -1,11 +1,12 @@
-import { ApiError, GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import { z } from "zod";
-import { GEMINI_SCAN_MODEL } from "@/lib/config";
-import type { Confidence, LabOrder, Medication, MedicationOrderStatus, Prescription } from "@/lib/types";
+import { ACCEPTANCE_CODES, CAUSE_CODES, INTERVENTION_CODES, PROBLEM_CODES } from "@/lib/classification";
+import { GEMINI_MODEL } from "@/lib/config";
+import type { Medication, Prescription, Problem } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-const MAX_BASE64_LENGTH = 28_000_000;
+const MAX_BASE64_LENGTH = 18_000_000;
 const supportedMimeTypes = ["image/jpeg", "image/png", "image/webp"] as const;
 
 const ScanRequestSchema = z
@@ -16,41 +17,36 @@ const ScanRequestSchema = z
   .strict();
 
 const nullableString = z.string().nullable();
-const confidenceSchema = z.enum(["high", "low"]).nullable();
-const orderStatusSchema = z.enum(["active", "stopped", "modified", "unknown"]);
-
 const modelResultSchema = z
   .object({
     ward: nullableString,
     patientAge: z.number().int().nonnegative().nullable(),
     patientGender: nullableString,
-    patientName: nullableString,
-    fileNumber: nullableString,
-    identifierConfidence: confidenceSchema,
     medications: z.array(
       z
         .object({
           name: nullableString,
-          genericName: nullableString,
           dose: nullableString,
           unit: nullableString,
           frequency: nullableString,
           route: nullableString,
           duration: nullableString,
-          confidence: confidenceSchema,
-          conditions: z.array(z.string()).nullable(),
-          startDate: nullableString,
-          orderStatus: orderStatusSchema,
           sourceText: nullableString,
         })
         .strict(),
     ),
-    labOrders: z.array(
+    problems: z.array(
       z
         .object({
-          test: nullableString,
-          date: nullableString,
-          sourceText: nullableString,
+          medicationIndexes: z.array(z.number().int().nonnegative()).min(1),
+          problemCode: z.enum(PROBLEM_CODES.map(({ code }) => code) as [string, ...string[]]).nullable(),
+          causeCode: z.enum(CAUSE_CODES.map(({ code }) => code) as [string, ...string[]]).nullable(),
+          explanation: nullableString,
+          severity: z.enum(["low", "moderate", "high"]).nullable(),
+          suggestedIntervention: z
+            .enum(INTERVENTION_CODES.map(({ code }) => code) as [string, ...string[]])
+            .nullable(),
+          highlights: z.array(z.string()),
         })
         .strict(),
     ),
@@ -64,91 +60,111 @@ const modelResponseSchema = {
     ward: nullableText,
     patientAge: { type: Type.INTEGER, nullable: true },
     patientGender: nullableText,
-    patientName: nullableText,
-    fileNumber: nullableText,
-    identifierConfidence: {
-      type: Type.STRING,
-      enum: ["high", "low"],
-      nullable: true,
-    },
     medications: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
           name: nullableText,
-          genericName: nullableText,
           dose: nullableText,
           unit: nullableText,
           frequency: nullableText,
           route: nullableText,
           duration: nullableText,
-          confidence: {
-            type: Type.STRING,
-            enum: ["high", "low"],
-            nullable: true,
-          },
-          conditions: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true },
-          startDate: nullableText,
-          orderStatus: {
-            type: Type.STRING,
-            enum: ["active", "stopped", "modified", "unknown"],
-          },
           sourceText: nullableText,
         },
-        required: [
-          "name",
-          "genericName",
-          "dose",
-          "unit",
-          "frequency",
-          "route",
-          "duration",
-          "confidence",
-          "conditions",
-          "startDate",
-          "orderStatus",
-          "sourceText",
-        ],
+        required: ["name", "dose", "unit", "frequency", "route", "duration", "sourceText"],
       },
     },
-    labOrders: {
+    problems: {
       type: Type.ARRAY,
       items: {
         type: Type.OBJECT,
         properties: {
-          test: nullableText,
-          date: nullableText,
-          sourceText: nullableText,
+          medicationIndexes: { type: Type.ARRAY, items: { type: Type.INTEGER } },
+          problemCode: {
+            type: Type.STRING,
+            enum: PROBLEM_CODES.map(({ code }) => code),
+            nullable: true,
+          },
+          causeCode: {
+            type: Type.STRING,
+            enum: CAUSE_CODES.map(({ code }) => code),
+            nullable: true,
+          },
+          explanation: nullableText,
+          severity: {
+            type: Type.STRING,
+            enum: ["low", "moderate", "high"],
+            nullable: true,
+          },
+          suggestedIntervention: {
+            type: Type.STRING,
+            enum: INTERVENTION_CODES.map(({ code }) => code),
+            nullable: true,
+          },
+          highlights: { type: Type.ARRAY, items: { type: Type.STRING } },
         },
-        required: ["test", "date", "sourceText"],
+        required: [
+          "medicationIndexes",
+          "problemCode",
+          "causeCode",
+          "explanation",
+          "severity",
+          "suggestedIntervention",
+          "highlights",
+        ],
       },
     },
   },
-  required: [
-    "ward",
-    "patientAge",
-    "patientGender",
-    "patientName",
-    "fileNumber",
-    "identifierConfidence",
-    "medications",
-    "labOrders",
-  ],
+  required: ["ward", "patientAge", "patientGender", "medications", "problems"],
 };
 
-function failure(error: string) {
-  return Response.json({ source: "failed", error }, { status: 200 });
+function failure(error = "Scan could not be completed. Please use manual entry.") {
+  return Response.json(
+    { prescription: null, source: "failed", error },
+    { status: 200 },
+  );
 }
 
 function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription {
-  const medications: Medication[] = result.medications.map((medication) => ({
-    id: crypto.randomUUID(),
+  const medicationIds = result.medications.map(() => crypto.randomUUID());
+  const medications: Medication[] = result.medications.map((medication, index) => ({
+    id: medicationIds[index]!,
     ...medication,
-    confidence: medication.confidence as Confidence | null,
-    orderStatus: medication.orderStatus as MedicationOrderStatus,
   }));
-  const labOrders: LabOrder[] = result.labOrders;
+
+  const problems: Problem[] = result.problems.map((problem) => {
+    if (
+      problem.medicationIndexes.some((index) => index < 0 || index >= medications.length)
+    ) {
+      throw new Error("Invalid medication reference.");
+    }
+
+    const medicationIdsForProblem = problem.medicationIndexes.map((index) => medicationIds[index]!);
+    const citedSourceText = medicationIdsForProblem
+      .map((id) => medications.find((medication) => medication.id === id)?.sourceText)
+      .filter((text): text is string => Boolean(text));
+
+    if (problem.highlights.some((highlight) => !citedSourceText.some((text) => text.includes(highlight)))) {
+      throw new Error("A source highlight did not match the prescription text.");
+    }
+
+    return {
+      id: crypto.randomUUID(),
+      medicationIds: medicationIdsForProblem,
+      problemCode: problem.problemCode as Problem["problemCode"],
+      causeCode: problem.causeCode as Problem["causeCode"],
+      explanation: problem.explanation,
+      severity: problem.severity,
+      suggestedIntervention: problem.suggestedIntervention as Problem["suggestedIntervention"],
+      finalIntervention: null,
+      acceptance: null,
+      reviewStatus: "suggested",
+      highlights: problem.highlights,
+      notes: null,
+    };
+  });
 
   return {
     id: crypto.randomUUID(),
@@ -156,64 +172,43 @@ function toPrescription(result: z.infer<typeof modelResultSchema>): Prescription
     ward: result.ward,
     patientAge: result.patientAge,
     patientGender: result.patientGender,
-    patientName: result.patientName,
-    fileNumber: result.fileNumber,
-    identifierConfidence: result.identifierConfidence as Confidence | null,
     medications,
-    labOrders,
-    problems: [],
+    problems,
     status: "pending",
   };
 }
 
-async function scan(request: Request, signal: AbortSignal, requestId: string) {
-  let stage: "request" | "gemini" | "json" | "validation" | "result" = "request";
+export async function POST(request: Request) {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return failure("The scan service is missing its Gemini API configuration.");
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("Gemini is not configured.");
     }
 
     const body = ScanRequestSchema.parse(await request.json());
     const imageBytes = Buffer.from(body.imageBase64, "base64");
-    if (imageBytes.length === 0 || imageBytes.length > 21_000_000) {
-      return failure("The uploaded image is empty or exceeds the scan size limit.");
+    if (imageBytes.length === 0 || imageBytes.length > 13_500_000) {
+      throw new Error("Invalid image size.");
     }
 
-    stage = "gemini";
     const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        retryOptions: {
-          attempts: 3,
-          httpStatusCodes: [500, 502, 503, 504],
-          initialDelay: 1,
-          maxDelay: 4,
-          expBase: 2,
-          jitter: 0.2,
-        },
-      },
+      apiKey: process.env.GEMINI_API_KEY,
     });
     const response = await ai.models.generateContent({
-      model: GEMINI_SCAN_MODEL,
+      model: GEMINI_MODEL,
       contents: [
         {
           role: "user",
           parts: [
             {
               text: [
-                "This is an Egyptian hospital treatment sheet. Return only the requested structured fields. The page may have a header with patient name and file number, and columns labeled Physician, Other Recommendations, Treatment, and Date/frequency.",
-                "Extract patientName and fileNumber only into their dedicated fields. Do not repeat either in ward, medication fields, lab fields, or any other value. Never include them in sourceText.",
-                "Extract medication orders from the Treatment column. Read their frequencies from the Date/frequency column. Copy every day/month date digit-for-digit and carefully check both parts (for example, 19/12, not 19/2). If the header has an admission date, use its year for dates that omit a year; otherwise leave the year out. Set startDate only when a date explicitly applies to that medication. Extract ward, patient age, and gender only when explicitly legible. Unknown or unreadable values must be null; never guess.",
-                "Each medication sourceText must be an exact contiguous quote from the Treatment column for that order. Split combined lines into separate medication entries while keeping the same exact sourceText on each entry.",
-                "Preserve brand names as written in name and provide genericName only when the mapping is clear. Known mappings: Rocephin=ceftriaxone, Tavanic=levofloxacin, Dexa=dexamethasone, ACC=acetylcysteine, Clexane=enoxaparin, Lasix=furosemide, Controloc=pantoprazole, Atrovent=ipratropium, Farcolin=salbutamol, Pulmicort=budesonide, Unasyn=ampicillin/sulbactam. Never silently correct a medication name.",
-                "Set confidence to low when a name is not recognized or the dose/unit is unusual for the drug; otherwise use high only when the medication and dose are clearly legible.",
-                "Keep conditions exactly as written, such as after sensitivity test or if BP > 90/60. Use null when no condition is recorded.",
-                "Abbreviations: amp=ampoule, tab=tablet, eff=effervescent, T after a dose=tablet, SC=subcutaneous, IV=intravenous, neb/nebulize=inhalation. Infer route from form only when clear: tab/T/eff/syrup=oral, nebulize=inhalation, SC=subcutaneous, amp=injection. For amp, specify IV or IM only if written; otherwise use injection and low confidence.",
-                "Normalize frequency only for clear shorthand: /24h=once daily, /12h=twice daily, /8h=three times daily, /6h=four times daily. Normalize gm to g. Keep unclear values null.",
-                "Read every line of Other Recommendations as a possible lab or diagnostic order; include blood tests, imaging, microbiology, and other tests such as CBC, chemistry, CRP, PT, INR, virology, albumin, ultrasound, sputum, AFB smear, and pleural fluid. Do not limit extraction to blood tests or skip a line. Include each test's date when legible, carefully preserving the full day/month and applying the header admission year only when present; otherwise leave the year out. Each lab sourceText must be an exact contiguous quote from that column. Use null for unknown test/date/sourceText values.",
-                "Physician-column marks: DS means stopped (discontinued); Mod means modified (dose or frequency changed). Set active only when the sheet explicitly indicates a medication is current and has no DS/Mod mark; use unknown when status cannot be determined or a mark is illegible or conflicting.",
-                "Ignore stamps, signatures, and handwritten Arabic notes. Do not make any medication-problem suggestions during this scan step.",
+                "Read this prescription image and return only the requested structured fields.",
+                "Copy medication names, doses, units, frequencies, routes, durations, and sourceText only when legible. Use null for absent or uncertain values; never guess or normalize uncertain text.",
+                "Extract ward, patient age, and gender only if explicitly visible. Never return patient names or ID numbers in any field.",
+                "Each medication sourceText must be an exact contiguous transcription of only that medication's prescription text.",
+                "Suggest a medication-related problem only when the prescription itself gives a clear reason. Do not invent drug interactions, infer facts not visible in the image, or use unsupported external clinical assumptions. Return an empty problems array if there is no clear issue.",
+                "Use only the supplied broad PCNE codes: P1 treatment effectiveness, P2 treatment safety, P3 other; C1 drug selection, C2 drug form, C3 dose selection, C4 treatment duration, C5 drug use process, C6 logistics, C7 patient, C8 patient transfer related, C9 other; I0 no intervention, I1 prescriber, I2 patient, I3 drug, I4 other.",
+                "For medicationIndexes use zero-based indexes into the medications array. Every highlight must be an exact quote from the sourceText of one of the referenced medications. Do not place names or ID numbers in explanations or highlights.",
+                "If a code, severity, or explanation is not clear, return null for that value.",
               ].join(" "),
             },
             { inlineData: { mimeType: body.mimeType, data: body.imageBase64 } },
@@ -221,84 +216,19 @@ async function scan(request: Request, signal: AbortSignal, requestId: string) {
         },
       ],
       config: {
-        abortSignal: signal,
         responseMimeType: "application/json",
         responseSchema: modelResponseSchema,
       },
     });
 
     if (!response.text) {
-      return failure("Gemini returned no scan data. No prescription was extracted.");
+      throw new Error("Gemini returned no structured result.");
     }
 
-    stage = "json";
-    const json = JSON.parse(response.text);
-    stage = "validation";
-    const parsed = modelResultSchema.parse(json);
-    stage = "result";
+    const parsed = modelResultSchema.parse(JSON.parse(response.text));
     const prescription = toPrescription(parsed);
     return Response.json({ prescription, source: "ai" });
-  } catch (error) {
-    // Return only safe categories and schema paths, never provider messages or patient data.
-    console.warn("scan.failed", {
-      requestId,
-      stage,
-      providerStatus: error instanceof ApiError ? error.status : null,
-      category: error instanceof ApiError
-        ? "provider"
-        : error instanceof z.ZodError
-          ? "validation"
-          : error instanceof SyntaxError
-            ? "json"
-            : "connection-or-internal",
-    });
-    if (error instanceof ApiError) {
-      if (error.status === 429) {
-        return failure("Gemini rate limit or quota exceeded (HTTP 429). Please wait or check your API quota.");
-      }
-      if (error.status === 401 || error.status === 403) {
-        return failure(`Gemini denied access (HTTP ${error.status}). Check the API key's permissions.`);
-      }
-      if (error.status === 404) {
-        return failure("The configured scan model is unavailable to this Gemini API key (HTTP 404).");
-      }
-      if (error.status >= 500) {
-        return failure(`Gemini's scan service failed (HTTP ${error.status}) despite automatic retries. This is a service error, not an image-quality result. Please try again later.`);
-      }
-      if (error.status === 400) {
-        return failure("Gemini rejected the scan request (HTTP 400). The image format or structured-output schema may be unsupported.");
-      }
-      return failure(`Gemini could not process the scan (HTTP ${error.status}).`);
-    }
-    if (error instanceof z.ZodError) {
-      if (stage === "request") {
-        return failure("The image upload request is invalid. Expected a base64 image with a JPEG, PNG, or WebP MIME type.");
-      }
-      const fields = [...new Set(error.issues.map((issue) => issue.path.join(".") || "root"))];
-      return failure(`Gemini returned scan data that failed validation at: ${fields.slice(0, 8).join(", ")}. No prescription was accepted.`);
-    }
-    if (error instanceof SyntaxError) {
-      return failure(stage === "request"
-        ? "The upload request was not valid JSON."
-        : "Gemini returned invalid JSON. No prescription was accepted.");
-    }
-    if (stage === "gemini") {
-      return failure("Could not complete the connection to Gemini. Please try again later.");
-    }
-    return failure(`Scan failed during the ${stage} step. No prescription was accepted.`);
+  } catch {
+    return failure();
   }
-}
-
-export async function POST(request: Request) {
-  const requestId = crypto.randomUUID();
-  const started = Date.now();
-  const response = await scan(request, request.signal, requestId);
-  response.headers.set("Cache-Control", "no-store");
-  response.headers.set("X-Scan-Request-Id", requestId);
-  console.info("scan.completed", {
-    requestId,
-    elapsedMs: Date.now() - started,
-    status: response.status,
-  });
-  return response;
 }

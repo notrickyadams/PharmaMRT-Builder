@@ -13,28 +13,15 @@ export type ProblemReviewStatus =
   | "edited"
   | "rejected"
   | "added";
-export type Confidence = "high" | "low";
-export type MedicationOrderStatus = "active" | "stopped" | "modified" | "unknown";
-
-export interface LabOrder {
-  test: string | null;
-  date: string | null;
-  sourceText: string | null;
-}
 
 export interface Medication {
   id: string;
   name: string | null;
-  genericName: string | null;
   dose: string | null;
   unit: string | null;
   frequency: string | null;
   route: string | null;
   duration: string | null;
-  confidence: Confidence | null;
-  conditions: string[] | null;
-  startDate: string | null;
-  orderStatus: MedicationOrderStatus;
   sourceText: string | null;
 }
 
@@ -59,11 +46,7 @@ export interface Prescription {
   ward: string | null;
   patientAge: number | null;
   patientGender: string | null;
-  patientName: string | null;
-  fileNumber: string | null;
-  identifierConfidence: Confidence | null;
   medications: Medication[];
-  labOrders: LabOrder[];
   problems: Problem[];
   status: PrescriptionStatus;
 }

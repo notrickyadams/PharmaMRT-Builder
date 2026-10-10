@@ -17,8 +17,8 @@ export default function HomePage() {
     <section><h2>AI suggests. You decide.</h2><p>Accept, edit or reject each suggestion, or document a problem yourself. Manual entry is always available.</p>
       <p className={styles.muted}>Fictional training sheets only. Patient names are always unspecified; real patient identifiers must not be entered.</p>
     </section>
-    <section><h2>Document administration</h2><p>Choose a saved reviewed case and medication, then explicitly record a given dose or document why it was missed. Administration history stays attached to that case in this browser.</p>
-      <Link className={styles.secondary} href="/administration">Open medication administration</Link>
+      <section><h2>Verify administration instructions</h2><p>Choose a saved reviewed case and medication, then explicitly document an IV bolus or infusion, known diluent volume and duration, or oral meal timing. Route and unknown details stay unspecified unless entered.</p>
+      <Link className={styles.secondary} href="/administration">Open administration instructions</Link>
     </section>
     <section><h2>Try the fictional reviewed cases</h2><p>Reset replaces saved cases on this browser with exactly three fictional pharmacist-reviewed examples. No AI request is made.</p>
       {!confirmReset ? <button type="button" onClick={() => setConfirmReset(true)}>Reset demo</button> :

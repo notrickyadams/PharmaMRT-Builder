@@ -1,0 +1,14 @@
+.summary{margin-top:12px}
+.list{display:flex;flex-direction:column;gap:9px}
+.item{display:flex;flex-direction:column;align-items:flex-start;gap:9px;padding:13px;border:1px solid #dce2db;border-radius:10px;background:#fbfcf8}
+.itemBody{min-width:0}
+.item h3{margin:0 0 4px;color:#173f48;font-size:1rem;overflow-wrap:anywhere}
+.instruction{margin:0;color:#285b5c;font-weight:700;overflow-wrap:anywhere}
+.facts,.reference{margin:5px 0 0;color:#566662;font-size:.82rem;overflow-wrap:anywhere}
+.editLink{display:inline-flex;align-items:center;justify-content:center;min-height:40px;padding:0 12px;border:1px solid #0f4c5c;border-radius:8px;color:#0f4c5c;font-size:.84rem;font-weight:700;text-decoration:none;white-space:nowrap}
+.editLink:focus-visible,.error button:focus-visible{outline:3px solid #e0a030;outline-offset:2px}
+.editLink:hover{background:#edf4f1}
+.error{padding:10px 12px;border:1px solid #d99c8f;border-radius:9px;background:#fbefeb;color:#702f25}
+.error p{margin:0 0 8px}
+.error button{min-height:38px;padding:0 10px;border:1px solid #a25542;border-radius:7px;background:#fff;color:#702f25;font:inherit;cursor:pointer}
+@media(min-width:600px){.item{flex-direction:row;align-items:center;justify-content:space-between}.editLink{flex:0 0 auto}}

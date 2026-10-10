@@ -6,6 +6,7 @@ import Shell from "@/components/Shell";
 import { readCases, type SavedCase } from "@/lib/storage";
 import { display } from "@/components/review-model";
 import { ProblemRead } from "@/components/Problems";
+import AdministrationInstructionSummary from "@/components/AdministrationInstructionSummary";
 import styles from "@/components/workflow.module.css";
 
 export default function RecordDetailPage() {
@@ -40,8 +41,9 @@ export default function RecordDetailPage() {
           <blockquote dir="auto">{display(m.sourceText)}</blockquote>
         </div>)}</details>
       </section>
-      <section><h2>Administration</h2><p>Record a given or missed dose against this saved reviewed case. Prescription details remain a reference; actual administration is entered separately.</p>
-        <Link className={styles.secondary} href={`/administration?case=${encodeURIComponent(record.id)}`}>Open administration for this case</Link>
+      <section><h2>Administration instructions</h2><p>Document how each medication is to be administered: IV bolus or infusion details, or oral meal timing. These are verified instructions, not given/missed-dose records. Prescription route remains a reference only.</p>
+        <AdministrationInstructionSummary record={record} />
+        <Link className={styles.secondary} href={`/administration?case=${encodeURIComponent(record.id)}`}>Open instructions for this case</Link>
       </section>
       <section><h2>Verified labs</h2><p>Orders are not results.</p>{[...new Set(record.review.labs.map(l => l.date))].map(date => <div key={date ?? "undated"}>
         <h3>{date ?? "Undated"}</h3><div className={styles.row}>{record.review.labs.filter(l => l.date === date).map(l => <span className={styles.chip} key={l.id} dir="auto">

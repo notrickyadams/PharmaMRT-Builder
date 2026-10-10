@@ -118,7 +118,7 @@ export default function ScanPage() {
       {review && <>
         <section><h2>Patient: unspecified</h2><p>File number: {display(review.fileNumber)} {review.fileNumber && "(fictional)"}</p>
           <label>Ward<input dir="auto" disabled={!!busy} placeholder="unspecified" value={review.ward ?? ""} onChange={e => changed({ ...review, ward: nullable(e.target.value) })} /></label>
-          {aiNotice && <p className={styles.warning}>Fictional example, not extracted from your image. Suggestions use a fixed example, not your corrections. Check every suggestion against the verified sheet.</p>}
+          {aiNotice && <p className={styles.muted}>Demo mode</p>}
         </section>
         <Verification review={review} onChange={changed} disabled={!!busy} />
         <section><label><input type="checkbox" checked={checked} disabled={!!busy || !validReview(review)} onChange={e => verify(e.target.checked)} /> I have checked the medications and labs</label>

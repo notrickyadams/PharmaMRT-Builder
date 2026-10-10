@@ -3,7 +3,7 @@
 .intro:after{content:"";position:absolute;width:180px;height:180px;border:1px solid rgba(15,76,92,.14);border-radius:50%;right:-78px;top:-96px;box-shadow:0 0 0 20px rgba(15,76,92,.035),0 0 0 42px rgba(15,76,92,.025);pointer-events:none}
 .eyebrow{margin:0 0 6px!important;color:#94702f;font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
 .intro h1{max-width:620px;font-size:clamp(1.75rem,5vw,2.35rem);letter-spacing:-.035em}
-.intro>p:not(.eyebrow){max-width:590px;margin:8px 0 0}
+.intro>p:not(.eyebrow){max-width:650px;margin:8px 0 0}
 .trainingNote{padding-top:10px;color:#465b5b;font-size:.86rem}
 .formSection,.historySection{padding:18px!important}
 .sectionHeading{display:flex;align-items:flex-start;gap:12px;margin:0 0 18px}
@@ -19,35 +19,41 @@
 .reference{margin-top:14px;padding:13px 15px;background:#f4f5ef;border-inline-start:4px solid #77988e;border-radius:8px}
 .referenceLabel{margin:0 0 5px!important;color:#526760;font-size:.76rem;font-weight:700;letter-spacing:.04em}
 .reference>strong{font-family:var(--font-head),sans-serif;color:#143f49;font-size:1.1rem}
-.reference p:last-of-type{margin:5px 0 0;font-size:.88rem}
+.reference p:last-of-type{margin:5px 0 0;font-size:.88rem;overflow-wrap:anywhere}
 .separator{color:#8c9692}
-.stoppedMessage{margin:10px 0 0!important;color:#75442c;font-size:.86rem;font-weight:600}
-.outcomeFieldset{border:0;padding:0;margin:0 0 16px}
-.outcomeFieldset legend{padding:0;margin-bottom:8px;color:#3d4850;font-size:.88rem;font-weight:700}
-.outcomeOption{display:flex!important;align-items:flex-start;flex-direction:row!important;gap:11px!important;padding:12px;border:1px solid #d9ded8;border-radius:10px;margin:7px 0;cursor:pointer;background:#fbfbf7}
+.fields{display:flex;flex-direction:column;gap:12px}
+.fieldGroup{display:grid;grid-template-columns:1fr;gap:12px}
+.optional{color:#65716f;font-size:.76rem;font-weight:500}
+.methodFieldset{display:grid;grid-template-columns:1fr;gap:8px;border:0;padding:0;margin:4px 0 2px}
+.methodFieldset legend{grid-column:1/-1;padding:0;margin-bottom:2px;color:#3d4850;font-size:.88rem;font-weight:700}
+.outcomeOption{display:flex!important;align-items:flex-start;flex-direction:row!important;gap:11px!important;padding:12px;border:1px solid #d9ded8;border-radius:10px;margin:0;cursor:pointer;background:#fbfbf7}
 .outcomeSelected{border-color:#0f4c5c;background:#edf4f1;box-shadow:inset 0 0 0 1px #0f4c5c}
 .outcomeOption input{width:20px;min-height:20px;margin:2px 0 0;accent-color:#0f4c5c}
 .outcomeOption span{display:flex;flex-direction:column;gap:2px}
 .outcomeOption strong{color:#173f48}
 .outcomeOption small{color:#59636c;font-size:.82rem;font-weight:400}
-.fields{display:flex;flex-direction:column;gap:12px}
-.fieldGroup{display:grid;grid-template-columns:1fr;gap:12px}
-.optional{color:#65716f;font-size:.76rem;font-weight:500}
-.notesField{margin-top:14px}
+.unitInput{position:relative;display:flex;align-items:center}
+.unitInput input{padding-inline-end:48px!important}
+.unitInput>span{position:absolute;inset-inline-end:13px;color:#65716f;font-size:.83rem;font-weight:650;pointer-events:none}
 .submitRow{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid #e7e9e2}
-.submitRow p{margin:0!important;color:#626d70;font-size:.8rem;align-self:center}
-.primaryAction,.secondaryAction{min-height:46px;padding:0 17px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:inherit;font-weight:700}
+.submitRow>p{margin:0!important;color:#626d70;font-size:.8rem;align-self:center}
+.actionGroup{display:flex;flex-direction:column;align-items:stretch;gap:9px}
+.primaryAction,.secondaryAction,.secondaryButton,.dangerAction{min-height:46px;padding:0 17px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:inherit;font-weight:700}
 .primaryAction{border:1px solid #0f4c5c;background:#0f4c5c;color:#fff;cursor:pointer}
 .primaryAction:hover:not(:disabled){background:#093d4b}
 .primaryAction:disabled{opacity:.55;cursor:not-allowed}
-.secondaryAction{border:1px solid #0f4c5c;background:#fff;color:#0f4c5c}
+.secondaryAction,.secondaryButton{border:1px solid #0f4c5c;background:#fff;color:#0f4c5c;cursor:pointer}
+.dangerAction{border:1px solid #a25542;background:#fff8f5;color:#7a3527;cursor:pointer}
 .actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.confirmRemove{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px;border-radius:9px;background:#fbefeb;color:#702f25;font-size:.85rem}
+.confirmRemove span{flex:1 1 100%}
 .errorBox,.successBox{padding:12px 14px;border-radius:10px;margin-top:14px}
 .errorBox{background:#fbefeb;border:1px solid #d99c8f;color:#702f25}
 .errorBox h2{color:#702f25!important}
 .errorBox p{margin:5px 0!important}
 .errorBox button{margin-top:8px}
 .successBox{background:#e5f1e9;border:1px solid #7ca68d;color:#244d38}
+.dirtyNote{margin:12px 0 0!important;color:#805d22;font-size:.85rem;font-weight:700}
 .loading{min-height:160px;display:flex;flex-direction:column;gap:12px;justify-content:center;padding:22px;border:1px solid #dce1d8;border-radius:14px;background:#fff;color:#59636c}
 .skeletonLine,.skeletonBlock{display:block;border-radius:6px;background:linear-gradient(90deg,#e6ebe6 25%,#f0f2ed 50%,#e6ebe6 75%);background-size:200% 100%;animation:loadingSweep 1.6s ease-in-out infinite}
 .skeletonLine{height:12px;width:48%}.skeletonLine:nth-child(2){width:72%}.skeletonBlock{height:58px;width:100%}
@@ -59,30 +65,23 @@
 .historyHeader h2{margin:0!important}
 .count{align-self:flex-start;padding:4px 10px;border-radius:99px;background:#e8f0ed;color:#285b5c;font-size:.78rem;font-weight:700}
 .historyPrompt{margin:0!important;padding:13px;background:#f4f5ef;border-radius:9px;color:#59636c}
-.historyEmpty{display:flex;align-items:flex-start;gap:12px;padding:14px;background:#f4f5ef;border-radius:9px}
-.historyEmpty>span{color:#94702f;font-family:var(--font-head),sans-serif;font-weight:700}
-.historyEmpty p{margin:0!important;color:#59636c}
 .historyList{display:flex;flex-direction:column;gap:10px}
 .historyItem{margin:0!important;padding:14px;border:1px solid #e0e4dc;border-radius:11px;background:#fff}
-.historyTop{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
-.historyTop time{color:#687473;font-size:.76rem}
-.givenBadge,.missedBadge{padding:3px 9px;border-radius:99px;font-size:.74rem;font-weight:750}
-.givenBadge{background:#e4f0e7;color:#315d3c}.missedBadge{background:#f8ebd7;color:#73531c}
-.historyItem h3{margin:10px 0 2px!important;color:#173f48;font-size:1.05rem;overflow-wrap:anywhere}
-.prescriptionRef{margin:0 0 9px!important;color:#66716d;font-size:.76rem}
+.historyItem h3{margin:2px 0 5px!important;color:#173f48;font-size:1.05rem;overflow-wrap:anywhere}
+.instructionSummary{margin:0 0 7px!important;color:#285b5c;font-weight:700;overflow-wrap:anywhere}
+.prescriptionRef{margin:9px 0 0!important;color:#66716d;font-size:.76rem;overflow-wrap:anywhere}
 .details{display:grid;grid-template-columns:1fr;gap:8px;margin:0}
 .details div{padding:7px 0;border-top:1px solid #eceee8}
 .details dt{color:#66716d;font-size:.75rem;font-weight:650}
 .details dd{margin:2px 0 0;color:#27363b;font-size:.9rem;overflow-wrap:anywhere}
-.note{margin:10px 0 0!important;padding:9px 10px;background:#f4f5ef;border-radius:7px;font-size:.86rem;overflow-wrap:anywhere}
+.textAction{margin-top:11px;padding:0;border:0;background:transparent;color:#0f4c5c;text-decoration:underline;text-underline-offset:3px;font:inherit;font-size:.88rem;font-weight:700;cursor:pointer}
 @media(min-width:640px){
  .selectionGrid,.fieldGroup{grid-template-columns:1fr 1fr}
  .details{grid-template-columns:1fr 1fr;column-gap:18px}
  .historyHeader{flex-direction:row;justify-content:space-between;align-items:flex-end}
  .count{align-self:center}
  .submitRow{flex-direction:row;align-items:center;justify-content:space-between}
+ .actionGroup{flex-direction:row;align-items:center;justify-content:flex-end;flex-wrap:wrap}
  .submitRow .primaryAction{min-width:190px}
- .outcomeFieldset{display:grid;grid-template-columns:1fr 1fr;gap:8px}
- .outcomeFieldset legend{grid-column:1/-1}
- .outcomeOption{margin:0}
+ .methodFieldset{grid-template-columns:repeat(3,minmax(0,1fr))}
 }

@@ -1,0 +1,32 @@
+kind = "web"
+previewPath = "/"
+title = "PharmaMRP"
+description = "A foundation for a clinical pharmacist documentation assistant that scans fictional prescriptions, extracts medication details, and suggests evidence-linked medication-related problems for pharmacist review."
+version = "1.0.0"
+id = "artifacts/pharmamrp"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/", "/api/scan" ]
+localPort = 20736
+
+[services.development]
+run = "pnpm --filter @workspace/pharmamrp run dev"
+
+[services.production]
+
+[services.production.build]
+args = ["pnpm", "--filter", "@workspace/pharmamrp", "run", "build"]
+
+[services.production.run]
+args = ["pnpm", "--filter", "@workspace/pharmamrp", "run", "start"]
+
+[services.production.run.env]
+PORT = "20736"
+NODE_ENV = "production"
+BASE_PATH = "/"
+
+[services.env]
+PORT = "20736"
+BASE_PATH = "/"

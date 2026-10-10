@@ -1,0 +1,6 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/scan/route": "app/api/scan/route.js",
+  "/test/page": "app/test/page.js"
+}

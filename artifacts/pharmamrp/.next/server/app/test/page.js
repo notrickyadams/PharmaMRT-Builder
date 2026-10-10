@@ -1,0 +1,13 @@
+var R=require("../../chunks/ssr/[turbopack]_runtime.js")("server/app/test/page.js")
+R.c("server/chunks/ssr/[root-of-the-server]__1wihp1uo8topu._.js")
+R.c("server/chunks/ssr/0o91_next_dist_esm_build_templates_app-page_1m_bbtehjw8gt.js")
+R.c("server/chunks/ssr/0o91_next_dist_1t5s9gyto7f0c._.js")
+R.c("server/chunks/ssr/0o91_next_dist_0t-mb_ohlc0ik._.js")
+R.c("server/chunks/ssr/[root-of-the-server]__0ydclq473bt7f._.js")
+R.c("server/chunks/ssr/0o91_next_dist_client_components_06ambjo0s43o3._.js")
+R.c("server/chunks/ssr/0o91_next_dist_client_components_builtin_forbidden_1sd77o_b9fpz0.js")
+R.c("server/chunks/ssr/0o91_next_dist_client_components_builtin_unauthorized_1lpy8m82e8o5t.js")
+R.c("server/chunks/ssr/0o91_next_dist_20g8dsait2pt4._.js")
+R.c("server/chunks/ssr/artifacts_pharmamrp__next-internal_server_app_test_page_actions_1ofmg2z5mws3r.js")
+R.m(49131)
+module.exports=R.m(49131).exports

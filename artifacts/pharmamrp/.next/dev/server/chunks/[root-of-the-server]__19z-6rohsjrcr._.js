@@ -176,6 +176,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zo
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$25$2e$76$2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z__$2e$enum$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js [app-route] (ecmascript) <export * as z .enum>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$25$2e$76$2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z__$2e$number$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js [app-route] (ecmascript) <export * as z .number>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$25$2e$76$2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z__$2e$array$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js [app-route] (ecmascript) <export * as z .array>");
+var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$25$2e$76$2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z__$2e$ZodError$3e$__ = __turbopack_context__.i("[project]/node_modules/.pnpm/zod@3.25.76/node_modules/zod/v3/external.js [app-route] (ecmascript) <export * as z .ZodError>");
 var __TURBOPACK__imported__module__$5b$project$5d2f$artifacts$2f$pharmamrp$2f$lib$2f$config$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/artifacts/pharmamrp/lib/config.ts [app-route] (ecmascript)");
 ;
 ;
@@ -335,7 +336,7 @@ const modelResponseSchema = {
         "labOrders"
     ]
 };
-function failure(error = "Scan could not be completed. Please check the image and try again.") {
+function failure(error) {
     return Response.json({
         source: "failed",
         error
@@ -366,17 +367,19 @@ function toPrescription(result) {
         status: "pending"
     };
 }
-async function POST(request) {
+async function scan(request, signal) {
+    let stage = "request";
     try {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            throw new Error("Gemini is not configured.");
+            return failure("The scan service is missing its Gemini API configuration.");
         }
         const body = ScanRequestSchema.parse(await request.json());
         const imageBytes = Buffer.from(body.imageBase64, "base64");
         if (imageBytes.length === 0 || imageBytes.length > 21_000_000) {
-            throw new Error("Invalid image size.");
+            return failure("The uploaded image is empty or exceeds the scan size limit.");
         }
+        stage = "gemini";
         const ai = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["GoogleGenAI"]({
             apiKey
         });
@@ -412,22 +415,119 @@ async function POST(request) {
                 }
             ],
             config: {
+                abortSignal: signal,
                 responseMimeType: "application/json",
                 responseSchema: modelResponseSchema
             }
         });
         if (!response.text) {
-            throw new Error("Gemini returned no structured result.");
+            return failure("Gemini returned no scan data. No prescription was extracted.");
         }
-        const parsed = modelResultSchema.parse(JSON.parse(response.text));
+        stage = "json";
+        const json = JSON.parse(response.text);
+        stage = "validation";
+        const parsed = modelResultSchema.parse(json);
+        stage = "result";
         const prescription = toPrescription(parsed);
         return Response.json({
             prescription,
             source: "ai"
         });
-    } catch  {
-        return failure();
+    } catch (error) {
+        // Return only safe categories and schema paths, never provider messages or patient data.
+        if (error instanceof __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f40$google$2b$genai$40$2$2e$28$2e$0$2f$node_modules$2f40$google$2f$genai$2f$dist$2f$node$2f$index$2e$mjs__$5b$app$2d$route$5d$__$28$ecmascript$29$__["ApiError"]) {
+            if (error.status === 429) {
+                return failure("Gemini rate limit or quota exceeded (HTTP 429). Please wait or check your API quota.");
+            }
+            if (error.status === 401 || error.status === 403) {
+                return failure(`Gemini denied access (HTTP ${error.status}). Check the API key's permissions.`);
+            }
+            if (error.status === 404) {
+                return failure("The configured scan model is unavailable to this Gemini API key (HTTP 404).");
+            }
+            if (error.status >= 500) {
+                return failure(`Gemini's scan service failed (HTTP ${error.status}). This is a service error, not an image-quality result. Please try again later.`);
+            }
+            if (error.status === 400) {
+                return failure("Gemini rejected the scan request (HTTP 400). The image format or structured-output schema may be unsupported.");
+            }
+            return failure(`Gemini could not process the scan (HTTP ${error.status}).`);
+        }
+        if (error instanceof __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$zod$40$3$2e$25$2e$76$2f$node_modules$2f$zod$2f$v3$2f$external$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__$3c$export__$2a$__as__z__$2e$ZodError$3e$__["z"].ZodError) {
+            if (stage === "request") {
+                return failure("The image upload request is invalid. Expected a base64 image with a JPEG, PNG, or WebP MIME type.");
+            }
+            const fields = [
+                ...new Set(error.issues.map((issue)=>issue.path.join(".") || "root"))
+            ];
+            return failure(`Gemini returned scan data that failed validation at: ${fields.slice(0, 8).join(", ")}. No prescription was accepted.`);
+        }
+        if (error instanceof SyntaxError) {
+            return failure(stage === "request" ? "The upload request was not valid JSON." : "Gemini returned invalid JSON. No prescription was accepted.");
+        }
+        if (stage === "gemini") {
+            return failure("Could not complete the connection to Gemini. Please try again later.");
+        }
+        return failure(`Scan failed during the ${stage} step. No prescription was accepted.`);
     }
+}
+async function POST(request) {
+    const encoder = new TextEncoder();
+    const abort = new AbortController();
+    let heartbeat;
+    let closed = false;
+    const onDisconnect = ()=>abort.abort();
+    request.signal.addEventListener("abort", onDisconnect, {
+        once: true
+    });
+    if (request.signal.aborted) abort.abort();
+    function cleanup() {
+        if (heartbeat) clearInterval(heartbeat);
+        request.signal.removeEventListener("abort", onDisconnect);
+    }
+    const stream = new ReadableStream({
+        start (controller) {
+            // JSON permits leading whitespace. Flush headers immediately and keep the
+            // connection active while Gemini works, without persisting scan results.
+            controller.enqueue(encoder.encode(`${" ".repeat(1024)}\n`));
+            heartbeat = setInterval(()=>{
+                if (!closed) controller.enqueue(encoder.encode(" \n"));
+            }, 10_000);
+            void (async ()=>{
+                try {
+                    const response = await scan(request, abort.signal);
+                    const body = await response.text();
+                    if (!closed) controller.enqueue(encoder.encode(body));
+                } catch  {
+                    if (!closed) {
+                        controller.enqueue(encoder.encode(JSON.stringify({
+                            source: "failed",
+                            error: "The scan response could not be completed. Please try again."
+                        })));
+                    }
+                } finally{
+                    cleanup();
+                    if (!closed) {
+                        closed = true;
+                        controller.close();
+                    }
+                }
+            })();
+        },
+        cancel () {
+            closed = true;
+            cleanup();
+            abort.abort();
+        }
+    });
+    return new Response(stream, {
+        status: 200,
+        headers: {
+            "Content-Type": "application/json; charset=utf-8",
+            "Cache-Control": "no-store, no-transform",
+            "X-Accel-Buffering": "no"
+        }
+    });
 }
 }),
 "[project]/artifacts/pharmamrp/lib/config.ts [app-route] (ecmascript)", ((__turbopack_context__) => {
@@ -439,7 +539,7 @@ __turbopack_context__.s([
     "GEMINI_SCAN_MODEL",
     ()=>GEMINI_SCAN_MODEL
 ]);
-const GEMINI_SCAN_MODEL = "gemini-3.8-flash";
+const GEMINI_SCAN_MODEL = "gemini-3-flash-preview";
 const GEMINI_ANALYZE_MODEL = "gemini-3.1-pro-preview";
 }),
 ];

@@ -1,0 +1,1 @@
+- [Direct-key Gemini validation](gemini-model-validation.md) — verify generation through the actual credential path; metadata access and integration model lists are insufficient.

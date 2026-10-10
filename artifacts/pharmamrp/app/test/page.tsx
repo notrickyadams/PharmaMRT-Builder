@@ -20,6 +20,51 @@ type AnalyzeResponse =
 const MAX_DIMENSION = 2400;
 const IDENTIFIERS_STORAGE_KEY = "pharmamrp:last-scan-identifiers:v1";
 
+async function readApiResponse<T>(response: Response, action: "Scan" | "Analysis"): Promise<T> {
+  if (!response.ok) {
+    await response.body?.cancel();
+    if (response.status === 504 || response.status === 408) {
+      throw new Error(`${action} gateway timed out before returning a result (HTTP ${response.status}). Please try again.`);
+    }
+    throw new Error(`${action} service could not return a result (HTTP ${response.status}). Please try again.`);
+  }
+
+  if (!response.headers.get("content-type")?.toLowerCase().includes("application/json")) {
+    await response.body?.cancel();
+    throw new Error(`${action} service returned a non-JSON response. This is a server or gateway error, not a prescription-reading result.`);
+  }
+
+  let text: string;
+  try {
+    text = await response.text();
+  } catch {
+    throw new Error(`${action} connection was interrupted before the result arrived. Please try again.`);
+  }
+
+  let payload: unknown;
+  try {
+    payload = JSON.parse(text);
+  } catch {
+    throw new Error(`${action} service returned incomplete or invalid JSON. No result was accepted.`);
+  }
+
+  if (!payload || typeof payload !== "object") {
+    throw new Error(`${action} service returned an invalid result.`);
+  }
+  const result = payload as Record<string, unknown>;
+  if (result.source === "failed" && typeof result.error === "string") return payload as T;
+  if (result.source === "ai") {
+    if (action === "Analysis" && Array.isArray(result.problems)) return payload as T;
+    if (action === "Scan" && result.prescription && typeof result.prescription === "object") {
+      const prescription = result.prescription as Record<string, unknown>;
+      if (Array.isArray(prescription.medications) && Array.isArray(prescription.labOrders)) {
+        return payload as T;
+      }
+    }
+  }
+  throw new Error(`${action} service returned an invalid result.`);
+}
+
 async function resizeImage(file: File): Promise<{
   imageBase64: string;
   mimeType: "image/jpeg";
@@ -177,7 +222,7 @@ export default function TestPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(resized),
       });
-      const payload = (await response.json()) as ScanResponse;
+      const payload = await readApiResponse<ScanResponse>(response, "Scan");
       setScanResponse(payload);
 
       if (payload.source === "failed") {
@@ -247,7 +292,7 @@ export default function TestPage() {
           patientGender: prescription.patientGender,
         }),
       });
-      const payload = (await response.json()) as AnalyzeResponse;
+      const payload = await readApiResponse<AnalyzeResponse>(response, "Analysis");
       setAnalyzeResponse(payload);
       if (payload.source === "failed") {
         setAnalyzeError(payload.error);

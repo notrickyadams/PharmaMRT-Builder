@@ -49,6 +49,7 @@ Storage: localStorage in try/catch, plus a "Reset demo" button.
 - The Next.js App Router app is in `artifacts/pharmamrp`.
 - `/test` is a bare two-step scan-and-analyze page. It resizes images to a maximum dimension of about 2400px, displays low-confidence medication rows and lab orders, masks identifiers by default, and shows raw JSON for both steps.
 - `POST /api/scan` uses `@google/genai` on the server with `GEMINI_API_KEY`, structured JSON output, and Zod validation. It extracts identifiers, medications, and lab orders; it does not generate problems.
+- Scan uses `gemini-3-flash-preview` and streams JSON-compatible whitespace keepalives while Gemini works, without a custom scan timeout or persistent server-side result storage. The test page checks HTTP status, content type, and response shape and reports gateway/connection failures without displaying HTML or raw parsing errors.
 - `POST /api/analyze` accepts only medications, lab orders, ward, age, and gender. It uses the configured analyze model, validates structured PCNE suggestions, and never receives patientName or fileNumber.
 - `lib/types.ts` includes nullable scan fields, medication confidence/order details, and lab orders. `lib/config.ts` exposes separate scan and analyze Gemini models. Missing or uncertain values remain null; problems require exact source highlights.
 - This step adds only the app foundation and scan test surface. Records, pharmacist review, manual-entry workflow, local persistence, and reports are not implemented yet.

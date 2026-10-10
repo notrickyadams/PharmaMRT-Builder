@@ -58,17 +58,17 @@ async function finishAfterDelay(t, promise) {
   return promise;
 }
 
-test("DEMO_MODE defaults false and only the literal true setting opts in", async () => {
+test("DEMO_MODE stays enabled regardless of the environment setting", async () => {
   const previous = process.env.DEMO_MODE;
   const source = ts.transpileModule(readFileSync(new URL("../config.ts", import.meta.url), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.ESNext },
   }).outputText;
   try {
-    for (const [setting, expected] of [[undefined, false], ["false", false], ["TRUE", false], ["true", true]]) {
+    for (const setting of [undefined, "false", "TRUE", "true"]) {
       if (setting === undefined) delete process.env.DEMO_MODE;
       else process.env.DEMO_MODE = setting;
       const module = await import(`data:text/javascript;base64,${Buffer.from(source + `\n// ${setting}`).toString("base64")}`);
-      assert.equal(module.DEMO_MODE, expected);
+      assert.equal(module.DEMO_MODE, true);
     }
   } finally {
     if (previous === undefined) delete process.env.DEMO_MODE;

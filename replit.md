@@ -1,5 +1,5 @@
 # PharmaMRP
-AI documentation assistant for clinical pharmacists. Hackathon demo.
+Documentation assistant for clinical pharmacists. Hackathon demo.
 
 ## Problem
 Clinical pharmacists find medication-related problems (MRPs) in prescriptions, such as drug
